@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -18,9 +18,7 @@ class MemoryStore:
     def _validate_scope(self, scope: str) -> None:
         """Validate scope against allowlist to prevent path traversal."""
         if scope not in self.SCOPES:
-            raise ValueError(
-                f"Invalid memory scope: {scope!r}. Must be one of: {', '.join(self.SCOPES)}"
-            )
+            raise ValueError(f"Invalid memory scope: {scope!r}. Must be one of: {', '.join(self.SCOPES)}")
 
     def ensure_dir(self) -> None:
         self.memory_dir.mkdir(parents=True, exist_ok=True)
@@ -47,7 +45,7 @@ class MemoryStore:
         self.ensure_dir()
         path = self._scope_path(scope)
 
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+        ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%MZ")
         attribution = f" ({author})" if author else ""
         line = f"\n- [{ts}]{attribution} {entry}\n"
 
@@ -63,11 +61,7 @@ class MemoryStore:
             content = self.read(scope)
             if not content:
                 continue
-            matches = [
-                line.strip()
-                for line in content.splitlines()
-                if query_lower in line.lower() and line.strip()
-            ]
+            matches = [line.strip() for line in content.splitlines() if query_lower in line.lower() and line.strip()]
             if matches:
                 results[scope] = matches
 
@@ -77,7 +71,4 @@ class MemoryStore:
         """List available memory scopes."""
         if not self.memory_dir.exists():
             return []
-        return [
-            p.stem for p in self.memory_dir.glob("*.md")
-            if p.stem in self.SCOPES
-        ]
+        return [p.stem for p in self.memory_dir.glob("*.md") if p.stem in self.SCOPES]

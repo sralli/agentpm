@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import frontmatter
@@ -12,11 +12,23 @@ import frontmatter
 from agentpm.models import ProgressEntry, Task, TaskPriority, TaskStatus, TaskType
 from agentpm.store import sanitize_name
 
-_MUTABLE_FIELDS = frozenset({
-    "status", "priority", "type", "category", "assigned",
-    "depends_on", "blocks", "acceptance_criteria", "tags",
-    "context", "decisions", "artifacts", "handoff",
-})
+_MUTABLE_FIELDS = frozenset(
+    {
+        "status",
+        "priority",
+        "type",
+        "category",
+        "assigned",
+        "depends_on",
+        "blocks",
+        "acceptance_criteria",
+        "tags",
+        "context",
+        "decisions",
+        "artifacts",
+        "handoff",
+    }
+)
 
 
 # --- Helpers ---
@@ -65,12 +77,14 @@ def _parse_progress(text: str) -> list[ProgressEntry]:
         try:
             ts = datetime.fromisoformat(match.group(1))
         except ValueError:
-            ts = datetime.now(timezone.utc)
-        entries.append(ProgressEntry(
-            timestamp=ts,
-            agent=match.group(2),
-            message=match.group(3).strip(),
-        ))
+            ts = datetime.now(UTC)
+        entries.append(
+            ProgressEntry(
+                timestamp=ts,
+                agent=match.group(2),
+                message=match.group(3).strip(),
+            )
+        )
     return entries
 
 
@@ -143,8 +157,8 @@ def task_from_file(path: Path) -> Task:
         blocks=_ensure_list(meta.get("blocks")),
         acceptance_criteria=_ensure_list(meta.get("acceptanceCriteria")),
         tags=_ensure_list(meta.get("tags")),
-        created=meta.get("created", datetime.now(timezone.utc)),
-        updated=meta.get("updated", datetime.now(timezone.utc)),
+        created=meta.get("created", datetime.now(UTC)),
+        updated=meta.get("updated", datetime.now(UTC)),
         context=context,
         progress=_parse_progress(progress_text),
         decisions=_extract_list_items(decisions_text),
@@ -283,7 +297,7 @@ class TaskStore:
             if key in _MUTABLE_FIELDS:
                 setattr(task, key, value)
 
-        task.updated = datetime.now(timezone.utc)
+        task.updated = datetime.now(UTC)
         path = _task_path(self.root, project, task_id)
         path.write_text(task_to_markdown(task))
         return task
@@ -293,12 +307,14 @@ class TaskStore:
         if not task:
             return None
 
-        task.progress.append(ProgressEntry(
-            timestamp=datetime.now(timezone.utc),
-            agent=agent,
-            message=message,
-        ))
-        task.updated = datetime.now(timezone.utc)
+        task.progress.append(
+            ProgressEntry(
+                timestamp=datetime.now(UTC),
+                agent=agent,
+                message=message,
+            )
+        )
+        task.updated = datetime.now(UTC)
 
         path = _task_path(self.root, project, task_id)
         path.write_text(task_to_markdown(task))

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from agentpm.store import sanitize_name
 from agentpm.store.memory_store import MemoryStore
 from agentpm.store.project_store import ProjectStore
-from agentpm.store import sanitize_name
 from agentpm.store.task_store import TaskStore
 
 

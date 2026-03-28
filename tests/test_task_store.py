@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from agentpm.models import TaskStatus
-from agentpm.store.task_store import TaskStore, task_from_file, task_to_markdown
+from agentpm.store.task_store import TaskStore
 
 
 def _tmp_root():

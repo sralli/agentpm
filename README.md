@@ -1,86 +1,195 @@
+<!-- mcp-name: io.github.sralli/agentpm -->
+
 # agentpm
 
-Universal project management for AI coding agents.
+[![PyPI version](https://img.shields.io/pypi/v/agentpm.svg)](https://pypi.org/project/agentpm/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://github.com/sralli/agentpm/actions/workflows/ci.yml/badge.svg)](https://github.com/sralli/agentpm/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-An MCP server + CLI that gives any AI agent (Claude Code, Cursor, OpenCode) a shared project management layer with spec-driven planning, task tracking, dependency resolution, memory, and cross-session continuity.
+**Universal project management for AI coding agents.**
+
+An MCP server that gives any AI agent (Claude Code, Cursor, OpenCode) a shared project management layer — spec-driven planning, task tracking with dependencies, memory, and cross-session continuity. Works for dev, docs, email, and life organization.
 
 ## Quick Start
 
 ```bash
-# Install
-uv tool install agentpm
+# 1. Install
+pip install agentpm
+# or: uvx agentpm --help
 
-# Add to Claude Code
-claude mcp add agentpm -- uv run --project /path/to/agentpm agentpm serve
+# 2. Add to Claude Code
+claude mcp add agentpm -- uvx agentpm --home serve
 
-# Or use the CLI directly
-agentpm init                          # Initialize .agentpm/ in current repo
-agentpm project create my-app         # Create a project
-agentpm task create my-app "Build auth" -p high  # Add tasks
-agentpm task list my-app              # View board
-agentpm next my-app                   # What should I work on?
-agentpm serve                         # Start MCP server
+# 3. Start managing projects
+# (in Claude Code, the pm_* tools are now available)
 ```
 
-## MCP Tools (24 tools)
+## Installation
 
-### Board & Projects
-- `pm_board_init` / `pm_board_status`
-- `pm_project_create` / `pm_project_list` / `pm_project_get`
-- `pm_spec_update` / `pm_plan_update`
+### Claude Code
 
-### Tasks
-- `pm_task_create` / `pm_task_list` / `pm_task_get`
-- `pm_task_claim` / `pm_task_update` / `pm_task_complete`
-- `pm_task_block` / `pm_task_handoff` / `pm_task_next`
+```bash
+claude mcp add agentpm -- uvx agentpm --home serve
+```
 
-### Memory
-- `pm_memory_read` / `pm_memory_write` / `pm_memory_append` / `pm_memory_search`
+### Claude Desktop
 
-### Agents
-- `pm_agent_register` / `pm_agent_heartbeat` / `pm_agent_list`
+Add to your `claude_desktop_config.json`:
 
-### Utilities
-- `pm_check_deps` (dependency cycle detection)
+```json
+{
+  "mcpServers": {
+    "agentpm": {
+      "command": "uvx",
+      "args": ["agentpm", "--home", "serve"]
+    }
+  }
+}
+```
 
-## Storage
+### Cursor
 
-All state lives as git-native Markdown files in `.agentpm/`:
+Add to Cursor Settings > MCP Servers:
+
+```json
+{
+  "agentpm": {
+    "command": "uvx",
+    "args": ["agentpm", "--home", "serve"]
+  }
+}
+```
+
+### CLI (standalone)
+
+```bash
+agentpm init                                    # Initialize board
+agentpm project create my-app                   # Create a project
+agentpm task create my-app "Build auth" -p high # Add tasks
+agentpm task list my-app                        # View board
+agentpm next my-app                             # What to work on next?
+agentpm status                                  # Dashboard overview
+```
+
+## Features
+
+### 25 MCP Tools
+
+| Group | Tools | Purpose |
+|-------|-------|---------|
+| **Board** | `pm_board_init`, `pm_board_status` | Initialize and overview |
+| **Projects** | `pm_project_create`, `pm_project_list`, `pm_project_get`, `pm_spec_update`, `pm_plan_update` | Multi-project management with living specs |
+| **Tasks** | `pm_task_create`, `pm_task_list`, `pm_task_get`, `pm_task_claim`, `pm_task_progress`, `pm_task_complete`, `pm_task_block`, `pm_task_handoff`, `pm_task_next` | Full task lifecycle with dependencies |
+| **Memory** | `pm_memory_read`, `pm_memory_write`, `pm_memory_append`, `pm_memory_search` | Cross-session knowledge persistence |
+| **Agents** | `pm_agent_register`, `pm_agent_heartbeat`, `pm_agent_list`, `pm_agent_suggest` | Multi-agent coordination and routing |
+| **Utils** | `pm_check_deps` | Dependency cycle detection |
+
+### Key Capabilities
+
+- **Spec-driven planning** — living specifications that evolve with the project
+- **Task dependencies** — auto-unblocks tasks when their dependencies complete
+- **Cross-session continuity** — pick up exactly where you left off
+- **Multi-project boards** — manage dev, docs, personal tasks in one place
+- **Agent routing** — suggests which model/agent should handle each task type
+- **Handoff context** — structured knowledge transfer between agents
+- **Memory system** — project learnings, decisions, and patterns persist across sessions
+
+## How It Works
+
+All state is stored as human-readable Markdown files with YAML frontmatter:
 
 ```
-.agentpm/
+~/.agentpm/
 ├── config.yaml
 ├── projects/
-│   └── my-app/
-│       ├── spec.md          # Living specification
-│       ├── plan.md          # Task decomposition plan
-│       └── tasks/
-│           ├── task-001.md  # Markdown + YAML frontmatter
-│           └── task-002.md
+│   ├── webapp/
+│   │   ├── spec.md              # Living specification
+│   │   ├── plan.md              # Task decomposition
+│   │   └── tasks/
+│   │       ├── task-001.md      # Markdown + YAML frontmatter
+│   │       └── task-002.md
+│   └── personal/
+│       └── tasks/...
 ├── agents/
 └── memory/
-    ├── project.md
-    ├── decisions.md
-    └── patterns.md
+    ├── project.md               # Shared learnings
+    ├── decisions.md             # Key decisions + rationale
+    └── patterns.md              # Discovered conventions
 ```
 
-Tasks are human-readable Markdown with YAML frontmatter — readable by any text editor, diffable by git.
+### Task Lifecycle
+
+```
+pending --> in_progress --> review --> done
+  |            |              |
+  v            v              v
+cancelled    blocked        blocked
+```
+
+Completing a task automatically unblocks its dependents.
+
+### Task File Example
+
+```markdown
+---
+id: task-001
+project: webapp
+title: Implement OAuth2 authentication
+status: in_progress
+priority: high
+type: dev
+assigned: claude-code
+dependsOn: []
+blocks: [task-003, task-004]
+acceptanceCriteria:
+  - Google OAuth redirect works
+  - Tokens stored securely
+---
+
+## Context
+User needs Google sign-in for the webapp.
+
+## Progress
+- [2026-03-28T10:05Z] claude-code — Explored existing auth code
+- [2026-03-28T14:30Z] claude-code — All tests passing, PR #42 ready
+
+## Handoff
+> OAuth works e2e. Reviewer asked for rate limiting — that's remaining work.
+```
 
 ## Architecture
 
-- **MCP Server** (FastMCP) — any MCP-capable agent connects instantly
-- **Git-native storage** — zero infrastructure, works offline
-- **Dependency engine** — auto-unblocks tasks, cycle detection, smart next-task suggestion
-- **Memory system** — project, decisions, patterns scopes
-- **Agent registry** — track who's working on what
+```
+src/agentpm/
+├── server.py           # MCP server wiring (FastMCP)
+├── config.py           # Shared configuration
+├── models.py           # Pydantic models
+├── task_graph.py       # Dependency resolution engine
+├── cli.py              # Click CLI
+├── store/
+│   ├── __init__.py     # sanitize_name() security utility
+│   ├── task_store.py   # Markdown + YAML file I/O
+│   ├── memory_store.py # Scoped memory storage
+│   └── project_store.py
+└── tools/              # MCP tool modules
+    ├── board.py        # 2 tools
+    ├── project.py      # 5 tools
+    ├── task.py         # 10 tools
+    ├── memory.py       # 4 tools
+    ├── agent.py        # 4 tools
+    └── utils.py        # 1 tool
+```
 
 ## Development
 
 ```bash
-git clone https://github.com/yourusername/agentpm
+git clone https://github.com/sralli/agentpm.git
 cd agentpm
 uv sync
-uv run pytest tests/ -v
+uv run pytest tests/ -v     # 57 tests
+uv run ruff check .          # Lint
+uv run ruff format --check . # Format check
 ```
 
 ## License
