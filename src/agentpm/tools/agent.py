@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agentpm.models import Agent
 
@@ -37,7 +37,7 @@ def register(mcp, stores, agents):
         """Signal that an agent is still actively working. Call periodically during long tasks."""
         if agent_id not in agents:
             return f"Agent '{agent_id}' not registered. Use pm_agent_register first."
-        agents[agent_id].last_heartbeat = datetime.now(timezone.utc)
+        agents[agent_id].last_heartbeat = datetime.now(UTC)
         agents[agent_id].status = "active"
         return f"Heartbeat recorded for '{agent_id}'."
 
@@ -82,8 +82,4 @@ def register(mcp, stores, agents):
         task_type = task.type.value
         category, suggestion = routing.get(task_type, ("unspecified", "Any capable agent"))
 
-        return (
-            f"Task: {task.id} ({task.title})\n"
-            f"Type: {task_type} -> Category: {category}\n"
-            f"Suggestion: {suggestion}"
-        )
+        return f"Task: {task.id} ({task.title})\nType: {task_type} -> Category: {category}\nSuggestion: {suggestion}"

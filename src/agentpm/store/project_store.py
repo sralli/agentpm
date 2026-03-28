@@ -31,9 +31,7 @@ class ProjectStore:
         return self.root / "config.yaml"
 
     def _write_config(self, config: BoardConfig) -> None:
-        self._config_path().write_text(
-            yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False)
-        )
+        self._config_path().write_text(yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False))
 
     def read_config(self) -> BoardConfig:
         path = self._config_path()

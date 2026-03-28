@@ -11,8 +11,7 @@ from agentpm.models import Agent
 from agentpm.store.memory_store import MemoryStore
 from agentpm.store.project_store import ProjectStore
 from agentpm.store.task_store import TaskStore
-from agentpm.tools import board, project, task, memory, agent, utils
-
+from agentpm.tools import agent, board, memory, project, task, utils
 
 # --- Lazy store initialization ---
 

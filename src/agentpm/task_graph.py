@@ -78,7 +78,7 @@ def detect_cycles(tasks: list[Task]) -> list[list[str]]:
                     cycle.reverse()
                     # Deduplicate by normalizing cycle rotation
                     min_idx = cycle.index(min(cycle[:-1]))
-                    normalized = tuple(cycle[min_idx:] + cycle[1:min_idx + 1])
+                    normalized = tuple(cycle[min_idx:] + cycle[1 : min_idx + 1])
                     if normalized not in seen_cycles:
                         seen_cycles.add(normalized)
                         cycles.append(list(cycle))

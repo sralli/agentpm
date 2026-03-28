@@ -1,12 +1,12 @@
 """Tests for dependency resolution engine."""
 
+from agentpm.models import Task, TaskStatus
 from agentpm.task_graph import (
     detect_cycles,
     find_unblocked_tasks,
     resolve_completions,
     suggest_next_task,
 )
-from agentpm.models import Task, TaskStatus
 
 
 def _task(id: str, status: str = "pending", depends_on: list[str] | None = None, priority: str = "medium") -> Task:

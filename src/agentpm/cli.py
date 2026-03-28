@@ -5,10 +5,10 @@ from __future__ import annotations
 import click
 
 from agentpm.config import resolve_root
-from agentpm.task_graph import suggest_next_task
 from agentpm.models import TaskStatus
 from agentpm.store.project_store import ProjectStore
 from agentpm.store.task_store import TaskStore
+from agentpm.task_graph import suggest_next_task
 
 
 @click.group()
@@ -164,6 +164,7 @@ def serve(ctx: click.Context) -> None:
     os.environ["AGENTPM_ROOT"] = str(ctx.obj["root"])
 
     from agentpm.server import mcp
+
     mcp.run(transport="stdio")
 
 

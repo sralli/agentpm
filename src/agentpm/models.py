@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
-from pydantic import BaseModel, Field
+from datetime import UTC, datetime
+from enum import StrEnum
 
+from pydantic import BaseModel, Field
 
 # --- Enums ---
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     BLOCKED = "blocked"
@@ -19,14 +19,14 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class TaskPriority(str, Enum):
+class TaskPriority(StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     DEV = "dev"
     DOCS = "docs"
     EMAIL = "email"
@@ -37,7 +37,7 @@ class TaskType(str, Enum):
     REVIEW = "review"
 
 
-class TaskCategory(str, Enum):
+class TaskCategory(StrEnum):
     CODE_COMPLEX = "code-complex"
     CODE_SIMPLE = "code-simple"
     CODE_FRONTEND = "code-frontend"
@@ -68,8 +68,8 @@ class Task(BaseModel):
     blocks: list[str] = Field(default_factory=list)
     acceptance_criteria: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Body sections (Markdown content, not in frontmatter)
     context: str = ""
@@ -94,7 +94,7 @@ class Project(BaseModel):
     description: str = ""
     spec: str = ""  # Markdown content of spec.md
     plan: str = ""  # Markdown content of plan.md
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Agent(BaseModel):
@@ -104,8 +104,8 @@ class Agent(BaseModel):
     type: str  # claude-code, cursor, opencode, human
     capabilities: list[str] = Field(default_factory=list)
     model: str | None = None
-    started: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_heartbeat: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_heartbeat: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str = "active"  # active, idle, disconnected
     current_task: str | None = None
 
@@ -117,8 +117,8 @@ class MemoryEntry(BaseModel):
     scope: str  # project, decisions, patterns
     content: str
     tags: list[str] = Field(default_factory=list)
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class BoardConfig(BaseModel):
