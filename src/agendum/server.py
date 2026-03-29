@@ -14,7 +14,7 @@ from agendum.store.plan_store import PlanStore
 from agendum.store.project_store import ProjectStore
 from agendum.store.task_store import TaskStore
 from agendum.store.trace_store import TraceStore
-from agendum.tools import agent, board, memory, orchestrator, project, task, utils
+from agendum.tools import agent, board, memory, orchestrator, project, task, task_workflow, utils
 from agendum.tools.orchestrator.enrichment import ContextEnricher
 from agendum.tools.orchestrator.sources import (
     ExternalReferencesSource,
@@ -113,6 +113,7 @@ enricher.register(ExternalReferencesSource(stores.project))
 board.register(mcp, stores, agents_registry)
 project.register(mcp, stores, agents_registry)
 task.register(mcp, stores, agents_registry)
+task_workflow.register(mcp, stores, agents_registry)
 memory.register(mcp, stores, agents_registry)
 agent.register(mcp, stores, agents_registry)
 utils.register(mcp, stores, agents_registry)
