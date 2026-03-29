@@ -23,6 +23,8 @@ AI coding agents are powerful but stateless. They forget what they did last sess
 - **Git-native** — All state is human-readable Markdown + YAML in a `.agendum/` directory. Diff it, commit it, review it in PRs.
 - **Beyond code** — Track dev tasks, docs, emails, personal todos, research — anything an agent (or human) needs to manage.
 
+![agendum demo](demo.gif)
+
 ## Quick Start
 
 ```bash
