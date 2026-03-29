@@ -12,6 +12,14 @@ from agendum.server import _Stores
 from agendum.store.plan_store import PlanStore
 from agendum.store.trace_store import TraceStore
 from agendum.tools import agent, board, memory, orchestrator, project, task, utils
+from agendum.tools.orchestrator.enrichment import ContextEnricher
+from agendum.tools.orchestrator.sources import (
+    ExternalReferencesSource,
+    HandoffSource,
+    MemorySource,
+    ProjectRulesSource,
+    ReviewHistorySource,
+)
 
 
 @pytest.fixture
@@ -35,6 +43,14 @@ async def mcp_server(tmp_path: Path):
 
     agents_registry: dict = {}
 
+    # Build enricher with all sources
+    enricher = ContextEnricher()
+    enricher.register(ProjectRulesSource(root))
+    enricher.register(MemorySource(stores.memory))
+    enricher.register(HandoffSource(stores.task))
+    enricher.register(ReviewHistorySource())
+    enricher.register(ExternalReferencesSource(stores.project))
+
     mcp = FastMCP("agentpm-test")
     board.register(mcp, stores, agents_registry)
     project.register(mcp, stores, agents_registry)
@@ -42,7 +58,7 @@ async def mcp_server(tmp_path: Path):
     memory.register(mcp, stores, agents_registry)
     agent.register(mcp, stores, agents_registry)
     utils.register(mcp, stores, agents_registry)
-    orchestrator.register(mcp, stores, agents_registry)
+    orchestrator.register(mcp, stores, agents_registry, enricher)
 
     return mcp, stores, agents_registry
 
