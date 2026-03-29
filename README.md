@@ -3,13 +3,25 @@
 # agendum
 
 [![PyPI version](https://img.shields.io/pypi/v/agendum.svg)](https://pypi.org/project/agendum/)
+[![Downloads](https://img.shields.io/pypi/dm/agendum.svg)](https://pypi.org/project/agendum/)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/sralli/agendum/actions/workflows/ci.yml/badge.svg)](https://github.com/sralli/agendum/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 **Universal project management for AI coding agents.**
 
-An MCP server that gives any AI agent (Claude Code, Cursor, OpenCode) a shared project management layer — spec-driven planning, task tracking with dependencies, memory, and cross-session continuity. Works for dev, docs, email, and life organization.
+An [MCP server](https://modelcontextprotocol.io/) that gives any AI agent (Claude Code, Cursor, Windsurf, Cline, OpenCode) a shared project management layer — spec-driven planning, task tracking with dependencies, memory, and cross-session continuity.
+
+## Why agendum?
+
+AI coding agents are powerful but stateless. They forget what they did last session, can't coordinate with other agents, and have no structured way to break down complex work. agendum fixes this:
+
+- **Memory across sessions** — An agent picks up exactly where the last one left off. Decisions, gotchas, and progress persist in git-friendly Markdown files.
+- **Multi-agent coordination** — Multiple agents (Claude Code on your laptop, Cursor on your desktop, a CI agent) share the same task board. Structured handoffs prevent duplicate work.
+- **Orchestrated execution** — Break a goal into a dependency DAG, dispatch tasks to sub-agents with rich context packets (project rules, memory, prior handoffs), and track completion with four-status reporting.
+- **Works with any MCP client** — Not locked to one IDE or agent. Any tool that speaks MCP can use agendum's 32 tools.
+- **Git-native** — All state is human-readable Markdown + YAML in a `.agendum/` directory. Diff it, commit it, review it in PRs.
+- **Beyond code** — Track dev tasks, docs, emails, personal todos, research — anything an agent (or human) needs to manage.
 
 ## Quick Start
 
