@@ -15,6 +15,14 @@ from agendum.store.project_store import ProjectStore
 from agendum.store.task_store import TaskStore
 from agendum.store.trace_store import TraceStore
 from agendum.tools import agent, board, memory, orchestrator, project, task, utils
+from agendum.tools.orchestrator.enrichment import ContextEnricher
+from agendum.tools.orchestrator.sources import (
+    ExternalReferencesSource,
+    HandoffSource,
+    MemorySource,
+    ProjectRulesSource,
+    ReviewHistorySource,
+)
 
 # --- Lazy store initialization ---
 
@@ -92,6 +100,15 @@ mcp = FastMCP(
     ),
 )
 
+# --- Context Enrichment Pipeline ---
+
+enricher = ContextEnricher()
+enricher.register(ProjectRulesSource(stores.root))
+enricher.register(MemorySource(stores.memory))
+enricher.register(HandoffSource(stores.task))
+enricher.register(ReviewHistorySource())
+enricher.register(ExternalReferencesSource(stores.project))
+
 # Register all tool modules
 board.register(mcp, stores, agents_registry)
 project.register(mcp, stores, agents_registry)
@@ -99,4 +116,4 @@ task.register(mcp, stores, agents_registry)
 memory.register(mcp, stores, agents_registry)
 agent.register(mcp, stores, agents_registry)
 utils.register(mcp, stores, agents_registry)
-orchestrator.register(mcp, stores, agents_registry)
+orchestrator.register(mcp, stores, agents_registry, enricher)
