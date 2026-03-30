@@ -35,6 +35,7 @@ _MUTABLE_FIELDS = frozenset(
 )
 
 
+
 class TaskStore:
     """File-based task storage backed by .agendum/ directory."""
 
