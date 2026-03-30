@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agendum.models import ExecutionStatus, TaskStatus
+from agendum.models import TaskStatus
 from agendum.task_graph import resolve_completions
 
 
@@ -45,7 +45,6 @@ def check_plan_level_complete(stores, project: str, plan_id: str, task_id: str) 
                 lines = [f"Level {lvl.level} complete!"]
                 if lvl.is_checkpoint:
                     lines.append("Next level is a checkpoint — call pm_orchestrate_approve to continue.")
-                    stores.plan.update_plan(project, plan_id, status=ExecutionStatus.PAUSED)
                 return lines
             break
     return []

@@ -178,6 +178,12 @@ def register(mcp, stores, agents):
 
         _log_criteria(project, task_id, reviewer_agent_id, criteria_met, criteria_failed)
 
+        # Auto-archive completed task
+        try:
+            stores.task.archive_task(project, task_id)
+        except (FileNotFoundError, ValueError):
+            pass  # Archive failure is non-critical
+
         result_lines = [f"Quality review passed for {task_id} — marked DONE"]
 
         unblocked = resolve_and_unblock(stores, project, task_id)

@@ -16,10 +16,11 @@ This project uses **agendum** for task management. Every non-trivial change foll
 3. DISPATCH       pm_orchestrate_next → get context packet for next task.
                   Spawn subagent (Agent tool) with the context packet as prompt.
                   Subagent must: implement → test → pm_orchestrate_report.
-4. REVIEW         After each task report:
-                  - pm_orchestrate_review stage=spec (acceptance criteria check)
+4. REVIEW         Only if report returns "awaiting review" (review_required=True in policy):
+                  - pm_orchestrate_review stage=spec (criteria_met/criteria_failed required)
                   - pm_orchestrate_review stage=quality (code quality check)
                   If review fails → task goes back to in_progress, subagent fixes.
+                  If report says "done" with no review notice → task is complete, skip to step 5.
 5. REPEAT         pm_orchestrate_next for the next task. Continue until plan complete.
 6. VERIFY         pm_orchestrate_status to confirm all tasks done.
                   Run full test suite. Lint. Commit.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agendum.models import ContextPacket, Task, TaskStatus
+from agendum.models import ContextPacket, ProjectPolicy, Task, TaskStatus
 from agendum.store.memory_store import MemoryStore
 from agendum.store.project_store import ProjectStore
 from agendum.store.task_store import TaskStore
@@ -177,9 +177,12 @@ class ExternalReferencesSource:
 
     def __init__(self, project_store: ProjectStore):
         self._store = project_store
+        self._policy_cache: dict[str, ProjectPolicy] = {}
 
     def enrich(self, packet: ContextPacket, task: Task, project: str) -> ContextPacket:
-        policy = self._store.get_policy(project)
+        if project not in self._policy_cache:
+            self._policy_cache[project] = self._store.get_policy(project)
+        policy = self._policy_cache[project]
         if not policy.external_references:
             return packet
 

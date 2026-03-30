@@ -109,7 +109,6 @@ def register(mcp, stores, agents):
         ]
 
         # Build context packets
-        spec_excerpt = proj.spec[:2000] if proj.spec else ""
         task_map = {t.id: t for t in created_tasks}
         context_packets = {}
         for i, t in enumerate(created_tasks):
@@ -121,12 +120,10 @@ def register(mcp, stores, agents):
             context_packets[t.id] = ContextPacket(
                 task_id=t.id,
                 goal=t.title,
-                spec_excerpt=spec_excerpt,
                 acceptance_criteria=t.acceptance_criteria,
                 key_files=td.get("key_files", [])[:10],
                 dependencies_summary=dep_summary,
                 constraints=td.get("constraints", []),
-                review_checklist=td.get("acceptance_criteria", []),
                 task_type=t.type.value,
                 task_priority=t.priority.value,
                 test_requirements=t.test_requirements if hasattr(t, "test_requirements") else [],

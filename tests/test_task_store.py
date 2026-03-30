@@ -157,23 +157,6 @@ class TestArchive:
         with pytest.raises(FileNotFoundError):
             store.archive_task("demo", "task-999")
 
-    def test_unarchive_task(self):
-        store = TaskStore(_tmp_root())
-        store.create_task("demo", "To archive")
-        store.update_task("demo", "task-001", status=TaskStatus.DONE)
-        store.archive_task("demo", "task-001")
-        assert len(store.list_tasks("demo")) == 0
-
-        task = store.unarchive_task("demo", "task-001")
-        assert task.title == "To archive"
-        assert len(store.list_tasks("demo")) == 1
-
-    def test_unarchive_nonexistent_fails(self):
-        store = TaskStore(_tmp_root())
-        store.ensure_project("demo")
-        with pytest.raises(FileNotFoundError):
-            store.unarchive_task("demo", "task-999")
-
     def test_list_archived_tasks(self):
         store = TaskStore(_tmp_root())
         store.create_task("demo", "A")
