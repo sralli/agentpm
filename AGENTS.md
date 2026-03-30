@@ -80,7 +80,7 @@ src/agendum/
     memory.py        — pm_memory_{write,append,read,search}
     agent.py         — pm_agent_{register,heartbeat,list,suggest}
     utils.py         — pm_check_deps
-    project.py       — pm_project_{create,list,get}, pm_plan_update, pm_spec_update
+    project.py       — pm_project_{create,list,get,spec_update,plan_update}
     orchestrator/    — Structured planning, dispatch, review, and policy
       __init__.py    — register() delegates to submodules
       _helpers.py    — resolve_and_unblock(), check_plan_level_complete(), parse_csv()

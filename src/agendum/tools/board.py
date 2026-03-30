@@ -47,6 +47,8 @@ def register(mcp, stores, agents):
                 if t.progress:
                     last = t.progress[-1]
                     recent.append(f"[{last.timestamp.strftime('%m-%d %H:%M')}] {t.id}: {last.message}")
+            for t in archived:
+                by_status[t.status.value] = by_status.get(t.status.value, 0) + 1
 
         recent.sort(reverse=True)
         active = [a.id for a in agents.values() if a.status == "active"]

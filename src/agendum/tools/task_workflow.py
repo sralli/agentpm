@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from agendum.env_context import get_device_name, get_git_branch, get_working_dir
 from agendum.models import AgentHandoffRecord, TaskStatus
-from agendum.task_graph import resolve_completions, suggest_next_task
+from agendum.task_graph import suggest_next_task
+from agendum.tools.orchestrator._helpers import resolve_and_unblock
 
 
 def register(mcp, stores, agents):
@@ -26,10 +27,7 @@ def register(mcp, stores, agents):
         if task.status not in (TaskStatus.PENDING, TaskStatus.BLOCKED):
             return f"Task '{task_id}' is {task.status.value}, cannot claim."
 
-        all_tasks = stores.task.list_tasks(project)
-        archived = stores.task.list_archived_tasks(project)
-        done_ids = {t.id for t in all_tasks if t.status == TaskStatus.DONE}
-        done_ids |= {t.id for t in archived if t.status == TaskStatus.DONE}
+        done_ids = {t.id for t in stores.task.all_tasks(project) if t.status == TaskStatus.DONE}
         unmet = [d for d in task.depends_on if d not in done_ids]
         if unmet:
             return f"Cannot claim '{task_id}': unmet dependencies: {', '.join(unmet)}"
@@ -38,7 +36,7 @@ def register(mcp, stores, agents):
         stores.task.add_progress(project, task_id, agent_id, "Claimed task")
 
         if agent_id in agents:
-            agents[agent_id].current_task = task_id
+            agents[agent_id].last_task = task_id
 
         return f"Claimed {task_id} for agent '{agent_id}'. Status: in_progress."
 
@@ -78,12 +76,7 @@ def register(mcp, stores, agents):
         stores.task.update_task(project, task_id, status=TaskStatus.DONE)
         stores.task.add_progress(project, task_id, agent_id, "Completed task")
 
-        all_tasks = stores.task.list_tasks(project)
-        archived = stores.task.list_archived_tasks(project)
-        unblocked = resolve_completions(all_tasks + archived, task_id)
-        for uid in unblocked:
-            stores.task.update_task(project, uid, status=TaskStatus.PENDING)
-            stores.task.add_progress(project, uid, "system", f"Auto-unblocked: dependency {task_id} completed")
+        unblocked = resolve_and_unblock(stores, project, task_id)
 
         # Auto-archive completed task
         try:

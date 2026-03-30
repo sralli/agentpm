@@ -62,6 +62,12 @@ def register(mcp, stores, agents):
 
         return msg
 
+    def _log_criteria(project, task_id, agent_id, criteria_met, criteria_failed):
+        if criteria_met:
+            stores.task.add_progress(project, task_id, agent_id, f"Criteria met: {', '.join(criteria_met)}")
+        if criteria_failed:
+            stores.task.add_progress(project, task_id, agent_id, f"Criteria failed: {', '.join(criteria_failed)}")
+
     @mcp.tool()
     def pm_orchestrate_review(
         project: str,
@@ -143,15 +149,7 @@ def register(mcp, stores, agents):
             )
             stores.trace.write_trace(review_trace)
 
-            # Log criteria details
-            if criteria_met:
-                stores.task.add_progress(
-                    project, task_id, reviewer_agent_id, f"Criteria met: {', '.join(criteria_met)}"
-                )
-            if criteria_failed:
-                stores.task.add_progress(
-                    project, task_id, reviewer_agent_id, f"Criteria failed: {', '.join(criteria_failed)}"
-                )
+            _log_criteria(project, task_id, reviewer_agent_id, criteria_met, criteria_failed)
 
             issue_summary = ", ".join(issues_list) or "none specified"
             return f"Review failed ({stage}): {task_id} back to in_progress. Issues: {issue_summary}"
@@ -164,15 +162,7 @@ def register(mcp, stores, agents):
                 reviewer_agent_id,
                 "Spec review PASSED — acceptance criteria met",
             )
-            # Log criteria details
-            if criteria_met:
-                stores.task.add_progress(
-                    project, task_id, reviewer_agent_id, f"Criteria met: {', '.join(criteria_met)}"
-                )
-            if criteria_failed:
-                stores.task.add_progress(
-                    project, task_id, reviewer_agent_id, f"Criteria failed: {', '.join(criteria_failed)}"
-                )
+            _log_criteria(project, task_id, reviewer_agent_id, criteria_met, criteria_failed)
             return (
                 f"Spec review passed for {task_id}. Proceed with quality review (pm_orchestrate_review stage=quality)."
             )
@@ -186,15 +176,7 @@ def register(mcp, stores, agents):
             "Quality review PASSED — task complete",
         )
 
-        # Log criteria details
-        if criteria_met:
-            stores.task.add_progress(
-                project, task_id, reviewer_agent_id, f"Criteria met: {', '.join(criteria_met)}"
-            )
-        if criteria_failed:
-            stores.task.add_progress(
-                project, task_id, reviewer_agent_id, f"Criteria failed: {', '.join(criteria_failed)}"
-            )
+        _log_criteria(project, task_id, reviewer_agent_id, criteria_met, criteria_failed)
 
         result_lines = [f"Quality review passed for {task_id} — marked DONE"]
 

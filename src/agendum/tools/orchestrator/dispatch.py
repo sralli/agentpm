@@ -130,7 +130,7 @@ def register(mcp, stores, agents, enricher=None):
                 )
 
         # Load policy once for the entire dispatch (not per-task)
-        policy = stores.project.get_policy(project) if enricher else None
+        policy = stores.project.get_policy(project)
 
         # Build dispatch instructions
         lines = [
@@ -157,7 +157,7 @@ def register(mcp, stores, agents, enricher=None):
                 continue
 
             # Enrich with live context if enricher is available
-            if enricher and policy:
+            if enricher:
                 packet = enricher.enrich(
                     packet,
                     task,

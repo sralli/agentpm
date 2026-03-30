@@ -39,6 +39,13 @@ class TaskType(StrEnum):
 
 
 class TaskCategory(StrEnum):
+    """Execution complexity category for agent routing.
+
+    Complements TaskType (domain): TaskType indicates WHAT kind of work,
+    TaskCategory indicates HOW complex the execution is.
+    Used by pm_agent_suggest for matching agents to task difficulty.
+    """
+
     CODE_COMPLEX = "code-complex"
     CODE_SIMPLE = "code-simple"
     CODE_FRONTEND = "code-frontend"
@@ -142,9 +149,9 @@ class Agent(BaseModel):
     capabilities: list[str] = Field(default_factory=list)
     model: str | None = None
     started: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    last_heartbeat: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_seen: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str = "active"  # active, idle, disconnected
-    current_task: str | None = None
+    last_task: str | None = None
 
 
 class MemoryEntry(BaseModel):

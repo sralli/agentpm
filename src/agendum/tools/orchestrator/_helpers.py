@@ -22,6 +22,7 @@ def resolve_and_unblock(stores, project: str, task_id: str) -> list[str]:
     unblocked = resolve_completions(all_tasks, task_id)
     for uid in unblocked:
         stores.task.update_task(project, uid, status=TaskStatus.PENDING)
+        stores.task.add_progress(project, uid, "system", f"Auto-unblocked: dependency {task_id} completed")
     return unblocked
 
 

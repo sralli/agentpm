@@ -90,3 +90,10 @@ src/agendum/
   tools/orchestrator/  — Planning, dispatch, review, policy (7 tools)
 templates/         — CLAUDE.md and AGENTS.md templates for projects using agendum
 ```
+
+## Migration notes
+
+- `pm_spec_update` -> `pm_project_spec_update`
+- `pm_plan_update` -> `pm_project_plan_update`
+- `Agent.last_heartbeat` -> `Agent.last_seen`
+- `Agent.current_task` -> `Agent.last_task`
