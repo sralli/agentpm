@@ -85,6 +85,13 @@ def register(mcp, stores, agents):
         except (FileNotFoundError, ValueError):
             auto_archived = False
 
+        # Auto-archive completed task
+        try:
+            stores.task.archive_task(project, task_id)
+            auto_archived = True
+        except (FileNotFoundError, ValueError):
+            auto_archived = False
+
         result = f"Completed {task_id}.{warning}"
         if unblocked:
             result += f" Unblocked: {', '.join(unblocked)}"

@@ -136,6 +136,15 @@ def register(mcp, stores, agents):
         return result
 
     @mcp.tool()
+    def pm_task_unarchive(project: str, task_id: str) -> str:
+        """Restore an archived task back to the active task list."""
+        try:
+            task = stores.task.unarchive_task(project, task_id)
+        except FileNotFoundError as e:
+            return f"Error: {e}"
+        return f"Unarchived {task_id}: {task.title} (status: {task.status.value})"
+
+    @mcp.tool()
     def pm_task_get(project: str, task_id: str) -> str:
         """Get full details of a specific task including progress log, decisions, and handoff context."""
         try:
