@@ -66,7 +66,7 @@ src/agendum/
 
   store/
     locking.py       — get_lock(path), atomic_write(path, content) — concurrency primitives
-    task_store.py    — TaskStore: CRUD + archive/unarchive for task Markdown files
+    task_store.py    — TaskStore: CRUD + archive for task Markdown files
     project_store.py — ProjectStore: project init, list, get, policies
     memory_store.py  — MemoryStore: append/read/search persistent agent notes
     agent_store.py   — AgentStore: agent registration and heartbeat persistence
@@ -76,7 +76,7 @@ src/agendum/
   tools/
     board.py         — pm_board_init, pm_board_status
     project.py       — pm_project_create, pm_project_list, pm_project_get
-    task.py          — pm_task_{create,list,get,archive,archive_all,unarchive}
+    task.py          — pm_task_{create,list,get,archive,archive_all}
     task_workflow.py  — pm_task_{claim,progress,complete,block,handoff,next}
     memory.py        — pm_memory_{write,append,read,search}
     agent.py         — pm_agent_{register,heartbeat,list,suggest}
@@ -171,7 +171,7 @@ def update_task(self, project, task_id, **updates):
     return task
 ```
 
-For file moves (archive/unarchive): read content → `atomic_write` to destination → `unlink` source → clean up `.lock` sidecar.
+For file moves (archive): read content → `atomic_write` to destination → `unlink` source → clean up `.lock` sidecar.
 
 ---
 

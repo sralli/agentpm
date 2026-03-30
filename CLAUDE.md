@@ -74,7 +74,7 @@ uv run ruff format .        # format (CI checks --check)
 - **New MCP tool**: add to `tools/<module>.py`, register via closure in `register(mcp, stores, agents)`
 - **Orchestrator tools**: add to `tools/orchestrator/<submodule>.py`, reuse helpers from `_helpers.py`
 - **Store writes**: always `with get_lock(path): ... atomic_write(path, content)`
-- **File moves (archive/unarchive)**: read → `atomic_write` to dest → `unlink` source → clean up `.lock` sidecar
+- **File moves (archive)**: read → `atomic_write` to dest → `unlink` source → clean up `.lock` sidecar
 - **Plans always start DRAFT** — caller approves after human review
 - **Traces are append-only** — one file per execution attempt, never modified
 - **Dependency resolution**: always include `list_archived_tasks()` when computing `done_ids`

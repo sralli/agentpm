@@ -200,29 +200,6 @@ async def test_task_list_include_archived(mcp_server):
 
 
 @pytest.mark.asyncio
-async def test_task_unarchive(mcp_server):
-    mcp, _, _ = mcp_server
-    await _setup(mcp)
-    await call(mcp, "pm_task_create", project="proj", title="Restore me")
-    await call(mcp, "pm_task_complete", project="proj", task_id="task-001")
-    # Unarchive
-    result = await call(mcp, "pm_task_unarchive", project="proj", task_id="task-001")
-    assert "Unarchived" in result
-    assert "Restore me" in result
-    # Now visible in active list again
-    result = await call(mcp, "pm_task_list", project="proj")
-    assert "task-001" in result
-
-
-@pytest.mark.asyncio
-async def test_task_unarchive_not_found(mcp_server):
-    mcp, _, _ = mcp_server
-    await _setup(mcp)
-    result = await call(mcp, "pm_task_unarchive", project="proj", task_id="task-999")
-    assert "Error" in result
-
-
-@pytest.mark.asyncio
 async def test_task_complete_auto_archives(mcp_server):
     mcp, _, _ = mcp_server
     await _setup(mcp)

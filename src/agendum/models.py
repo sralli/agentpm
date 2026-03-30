@@ -229,7 +229,6 @@ class ContextPacket(BaseModel):
     key_files: list[str] = Field(default_factory=list)
     dependencies_summary: str = ""
     constraints: list[str] = Field(default_factory=list)
-    review_checklist: list[str] = Field(default_factory=list)
     task_type: str = ""
     task_priority: str = ""
     test_requirements: list[str] = Field(default_factory=list)

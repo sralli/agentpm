@@ -176,21 +176,6 @@ class TaskStore:
         Path(str(path) + ".lock").unlink(missing_ok=True)
         return task
 
-    def unarchive_task(self, project: str, task_id: str) -> Task:
-        """Move a task from tasks/done/ back to tasks/."""
-        archive_path = self._tasks_dir(project) / "done" / f"{sanitize_name(task_id)}.md"
-        with get_lock(archive_path):
-            if not archive_path.exists():
-                raise FileNotFoundError(f"Task '{task_id}' not found in archive.")
-            task = task_from_file(archive_path)
-            dest = self._task_path(project, task_id)
-            content = archive_path.read_text()
-            atomic_write(dest, content)
-            archive_path.unlink()
-        # Clean up orphaned lock sidecar
-        Path(str(archive_path) + ".lock").unlink(missing_ok=True)
-        return task
-
     def all_tasks(
         self,
         project: str,

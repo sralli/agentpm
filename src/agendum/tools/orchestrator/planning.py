@@ -124,7 +124,6 @@ def register(mcp, stores, agents):
                 key_files=td.get("key_files", [])[:10],
                 dependencies_summary=dep_summary,
                 constraints=td.get("constraints", []),
-                review_checklist=td.get("acceptance_criteria", []),
                 task_type=t.type.value,
                 task_priority=t.priority.value,
                 test_requirements=t.test_requirements if hasattr(t, "test_requirements") else [],
