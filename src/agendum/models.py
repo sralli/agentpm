@@ -103,6 +103,10 @@ class BoardItem(BaseModel):
     decisions: list[str] = Field(default_factory=list)
 
 
+# Type alias: task_graph.py uses Task, which is now BoardItem
+Task = BoardItem
+
+
 class WorkPackage(BaseModel):
     """Bounded, context-rich unit of work returned by pm_next."""
 
