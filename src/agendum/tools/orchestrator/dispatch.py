@@ -39,12 +39,14 @@ def _write_trace(
     criteria_list: list[str],
 ) -> ExecutionTrace:
     """Construct and write an ExecutionTrace, returning the trace object."""
+    started = task.progress[0].timestamp if task.progress else datetime.now(UTC)
     trace = ExecutionTrace(
         task_id=task.id,
         plan_id=plan_id,
         project=project,
         agent_id=agent_id,
         model=model,
+        started=started,
         completed=datetime.now(UTC),
         completion_status=completion_status,
         concerns=concerns_list,
@@ -59,7 +61,7 @@ def _write_trace(
         task_category=task.category.value if task.category else None,
         task_priority=task.priority.value if task.priority else None,
     )
-    if trace.started:
+    if trace.started and trace.completed:
         trace.duration_seconds = (trace.completed - trace.started).total_seconds()
     stores.trace.write_trace(trace)
     return trace

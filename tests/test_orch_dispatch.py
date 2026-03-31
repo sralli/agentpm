@@ -156,6 +156,28 @@ class TestOrchestrateReport:
         traces = stores.trace.list_traces("myapp")
         assert traces[0].tests_passed is False
 
+    async def test_trace_has_meaningful_duration(self, setup):
+        mcp, stores, _ = setup
+        await _create_and_approve(mcp, "myapp", "Test", [{"title": "Timed task"}])
+        tasks = stores.task.list_tasks("myapp")
+        tid = tasks[0].id
+        # Claim adds a progress entry with a timestamp
+        await call(mcp, "pm_task_claim", project="myapp", task_id=tid, agent_id="bot")
+        await call(mcp, "pm_task_progress", project="myapp", task_id=tid, message="working")
+        await call(
+            mcp,
+            "pm_orchestrate_report",
+            project="myapp",
+            task_id=tid,
+            status="done",
+            plan_id="plan-001",
+        )
+        traces = stores.trace.list_traces("myapp")
+        assert len(traces) == 1
+        assert traces[0].duration_seconds is not None
+        assert traces[0].duration_seconds >= 0
+        assert traces[0].started < traces[0].completed
+
     async def test_invalid_status(self, setup):
         mcp, _, _ = setup
         result = await call(
