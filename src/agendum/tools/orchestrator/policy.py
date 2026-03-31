@@ -76,7 +76,7 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
                 try:
                     model_updates["by_category"] = json.loads(model_by_category)
                 except json.JSONDecodeError:
-                    return "Error: model_by_category must be valid JSON (e.g. '{\"code-complex\": \"large\"}')"
+                    return 'Error: model_by_category must be valid JSON (e.g. \'{"code-complex": "large"}\')'
         if model_by_type is not None:
             if isinstance(model_by_type, dict):
                 model_updates["by_type"] = model_by_type
@@ -84,7 +84,7 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
                 try:
                     model_updates["by_type"] = json.loads(model_by_type)
                 except json.JSONDecodeError:
-                    return "Error: model_by_type must be valid JSON (e.g. '{\"dev\": \"small\"}')"
+                    return 'Error: model_by_type must be valid JSON (e.g. \'{"dev": "small"}\')'
         if model_by_priority is not None:
             if isinstance(model_by_priority, dict):
                 model_updates["by_priority"] = model_by_priority
@@ -92,7 +92,7 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
                 try:
                     model_updates["by_priority"] = json.loads(model_by_priority)
                 except json.JSONDecodeError:
-                    return "Error: model_by_priority must be valid JSON (e.g. '{\"critical\": \"large\"}')"
+                    return 'Error: model_by_priority must be valid JSON (e.g. \'{"critical": "large"}\')'
 
         if model_updates:
             current_policy = stores.project.get_policy(project)

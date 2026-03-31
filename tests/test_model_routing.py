@@ -27,9 +27,7 @@ class TestResolveModel:
         assert resolve_model(policy, _task()) == "small"
 
     def test_by_type_beats_default(self):
-        policy = ProjectPolicy(
-            model_routing=ModelRouting(default="small", by_type={"dev": "large"})
-        )
+        policy = ProjectPolicy(model_routing=ModelRouting(default="small", by_type={"dev": "large"}))
         assert resolve_model(policy, _task(task_type=TaskType.DEV)) == "large"
         assert resolve_model(policy, _task(task_type=TaskType.DOCS)) == "small"
 
@@ -56,15 +54,11 @@ class TestResolveModel:
         assert resolve_model(policy, task) == "custom"
 
     def test_review_model(self):
-        policy = ProjectPolicy(
-            model_routing=ModelRouting(default="small", review="large")
-        )
+        policy = ProjectPolicy(model_routing=ModelRouting(default="small", review="large"))
         assert resolve_model(policy, _task(), is_review=True) == "large"
 
     def test_review_model_not_used_for_non_review(self):
-        policy = ProjectPolicy(
-            model_routing=ModelRouting(review="large")
-        )
+        policy = ProjectPolicy(model_routing=ModelRouting(review="large"))
         assert resolve_model(policy, _task(), is_review=False) is None
 
     def test_type_beats_review(self):
@@ -77,16 +71,12 @@ class TestResolveModel:
         assert resolve_model(policy, _task(), is_review=True) == "medium"
 
     def test_by_priority_fallback(self):
-        policy = ProjectPolicy(
-            model_routing=ModelRouting(by_priority={"critical": "large"})
-        )
+        policy = ProjectPolicy(model_routing=ModelRouting(by_priority={"critical": "large"}))
         task = Task(id="t-001", project="test", title="Urgent fix", type=TaskType.DEV, priority=TaskPriority.CRITICAL)
         assert resolve_model(policy, task) == "large"
 
     def test_by_priority_not_matched(self):
-        policy = ProjectPolicy(
-            model_routing=ModelRouting(by_priority={"critical": "large"})
-        )
+        policy = ProjectPolicy(model_routing=ModelRouting(by_priority={"critical": "large"}))
         task = Task(id="t-001", project="test", title="Low fix", type=TaskType.DEV, priority=TaskPriority.LOW)
         assert resolve_model(policy, task) is None
 
@@ -123,16 +113,12 @@ class TestPolicyModelRouting:
 
     async def test_set_default_model(self, setup):
         mcp, _, _ = setup
-        result = await call(
-            mcp, "pm_orchestrate_policy", project="myapp", model_default="small"
-        )
+        result = await call(mcp, "pm_orchestrate_policy", project="myapp", model_default="small")
         assert "model_routing.default: small" in result
 
     async def test_set_review_model(self, setup):
         mcp, _, _ = setup
-        result = await call(
-            mcp, "pm_orchestrate_policy", project="myapp", model_review="large"
-        )
+        result = await call(mcp, "pm_orchestrate_policy", project="myapp", model_review="large")
         assert "model_routing.review: large" in result
 
     async def test_set_by_category_via_store(self, setup):
@@ -177,16 +163,12 @@ class TestPolicyModelRouting:
 
     async def test_invalid_json_rejected(self, setup):
         mcp, _, _ = setup
-        result = await call(
-            mcp, "pm_orchestrate_policy", project="myapp", model_by_category="not json"
-        )
+        result = await call(mcp, "pm_orchestrate_policy", project="myapp", model_by_category="not json")
         assert "Error" in result
 
     async def test_routing_persists(self, setup):
         mcp, stores, _ = setup
-        await call(
-            mcp, "pm_orchestrate_policy", project="myapp", model_default="small", model_review="large"
-        )
+        await call(mcp, "pm_orchestrate_policy", project="myapp", model_default="small", model_review="large")
         policy = stores.project.get_policy("myapp")
         assert policy.model_routing.default == "small"
         assert policy.model_routing.review == "large"
