@@ -27,6 +27,7 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
         model_review: str | None = None,
         model_by_category: str | dict | None = None,
         model_by_type: str | dict | None = None,
+        model_by_priority: str | dict | None = None,
     ) -> str:
         """View or update a project's orchestration policy.
 
@@ -40,6 +41,8 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
             (e.g. {"code-complex": "large", "docs": "fast"})
           model_by_type: mapping of TaskType to tier
             (e.g. {"dev": "small", "planning": "large"})
+          model_by_priority: mapping of TaskPriority to tier
+            (e.g. {"critical": "large", "low": "fast"})
         """
         proj = stores.project.get_project(project)
         if not proj:
@@ -82,6 +85,14 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
                     model_updates["by_type"] = json.loads(model_by_type)
                 except json.JSONDecodeError:
                     return "Error: model_by_type must be valid JSON (e.g. '{\"dev\": \"small\"}')"
+        if model_by_priority is not None:
+            if isinstance(model_by_priority, dict):
+                model_updates["by_priority"] = model_by_priority
+            else:
+                try:
+                    model_updates["by_priority"] = json.loads(model_by_priority)
+                except json.JSONDecodeError:
+                    return "Error: model_by_priority must be valid JSON (e.g. '{\"critical\": \"large\"}')"
 
         if model_updates:
             current_policy = stores.project.get_policy(project)
@@ -107,6 +118,8 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
             lines.append(f"  model_routing.by_category: {policy.model_routing.by_category}")
         if policy.model_routing.by_type:
             lines.append(f"  model_routing.by_type: {policy.model_routing.by_type}")
+        if policy.model_routing.by_priority:
+            lines.append(f"  model_routing.by_priority: {policy.model_routing.by_priority}")
         if policy.model_routing.by_task:
             lines.append(f"  model_routing.by_task: {policy.model_routing.by_task}")
         return "\n".join(lines)

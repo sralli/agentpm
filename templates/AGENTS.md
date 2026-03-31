@@ -138,6 +138,26 @@ pending → blocked (dependency unmet or external blocker)
 
 Use memory for things that aren't obvious from code: "we chose X over Y because...", "this broke before when...", "the stakeholder wants...".
 
+## Model tier mapping
+
+Configure tiers via `pm_orchestrate_policy`. Tasks are auto-scored for complexity at creation time.
+
+| Tier | Suggested Model | Use For |
+|------|----------------|---------|
+| large | claude-opus-4-6 / gpt-5.4 | Architecture, complex multi-file code, planning |
+| default | claude-sonnet-4-6 | Standard dev, most tasks |
+| fast | claude-haiku-4-5 | Docs, email, simple fixes, trivial changes |
+| review | claude-sonnet-4-6 | Code review (use a different model than the writer) |
+
+Example policy:
+```
+pm_orchestrate_policy(project="myapp",
+  model_default="default",
+  model_review="review",
+  model_by_category='{"code-complex": "large", "code-simple": "fast", "docs": "fast"}',
+  model_by_priority='{"critical": "large"}')
+```
+
 ## Three-tier boundaries
 
 ### Always

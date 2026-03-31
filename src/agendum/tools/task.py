@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from agendum.models import Task, TaskStatus
+from agendum.complexity import score_complexity
+from agendum.models import Task, TaskCategory, TaskStatus
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -63,6 +64,7 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
         description: str = "",
         priority: str = "medium",
         task_type: str = "dev",
+        category: str | None = None,
         depends_on: list[str] | None = None,
         acceptance_criteria: list[str] | None = None,
         tags: list[str] | None = None,
@@ -77,6 +79,8 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
         Acceptance criteria are checked when completing a task.
         Valid priorities: critical, high, medium, low.
         Valid types: dev, docs, email, planning, personal, ops, research, review.
+        Valid categories: code-complex, code-simple, code-frontend, planning, review, docs, email, research, personal.
+          If omitted, auto-inferred from task metadata via complexity scoring.
 
         Optional metadata lists:
         - review_checklist: items to verify during code review.
@@ -101,6 +105,23 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
             )
         except ValueError as e:
             return f"Error: {e}"
+
+        # Auto-score complexity when category not explicitly provided.
+        if category:
+            stores.task.update_task(project, task.id, category=TaskCategory(category))
+        else:
+            inferred = score_complexity(
+                title=title,
+                description=description,
+                task_type=task_type,
+                priority=priority,
+                key_files=key_files,
+                acceptance_criteria=acceptance_criteria,
+                depends_on=depends_on,
+                constraints=constraints,
+            )
+            stores.task.update_task(project, task.id, category=inferred)
+
         status_note = ""
         if task.depends_on:
             status_note = f" (blocked by: {', '.join(task.depends_on)})"

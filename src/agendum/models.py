@@ -316,6 +316,7 @@ class ModelRouting(BaseModel):
     review: str | None = None
     by_category: dict[str, str] = Field(default_factory=dict)
     by_type: dict[str, str] = Field(default_factory=dict)
+    by_priority: dict[str, str] = Field(default_factory=dict)
     by_task: dict[str, str] = Field(default_factory=dict)
 
 

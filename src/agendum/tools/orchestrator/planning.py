@@ -5,12 +5,14 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
+from agendum.complexity import score_complexity
 from agendum.models import (
     ApprovalPolicy,
     ContextPacket,
     ExecutionLevel,
     ExecutionPlan,
     ExecutionStatus,
+    TaskCategory,
     TaskCompletionStatus,
     TaskStatus,
 )
@@ -45,6 +47,9 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
           - description (str, optional)
           - type (str, optional: dev/docs/review/research/ops/planning)
           - priority (str, optional: critical/high/medium/low)
+          - category (str, optional: code-complex/code-simple/code-frontend/planning/
+            review/docs/email/research/personal)
+            If omitted, auto-inferred from task metadata via complexity scoring.
           - depends_on_indices (list[int], optional: indices into the array)
           - acceptance_criteria (list[str], optional)
           - key_files (list[str], optional)
@@ -86,6 +91,24 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
                 acceptance_criteria=td.get("acceptance_criteria", []),
                 tags=td.get("tags", []),
             )
+
+            # Auto-score complexity when category not explicitly provided.
+            explicit_category = td.get("category")
+            if explicit_category:
+                stores.task.update_task(project, task.id, category=TaskCategory(explicit_category))
+            else:
+                inferred = score_complexity(
+                    title=title,
+                    description=td.get("description", ""),
+                    task_type=td.get("type", "dev"),
+                    priority=td.get("priority", "medium"),
+                    key_files=td.get("key_files", []),
+                    acceptance_criteria=td.get("acceptance_criteria", []),
+                    depends_on=[str(idx) for idx in td.get("depends_on_indices", [])],
+                    constraints=td.get("constraints", []),
+                )
+                stores.task.update_task(project, task.id, category=inferred)
+
             created_tasks.append(task)
 
         # Resolve dependency indices to task IDs

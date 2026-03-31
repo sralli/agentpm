@@ -83,24 +83,28 @@ uv run ruff format .        # format (CI checks --check)
 
 Configure per-project model tier preferences via `pm_orchestrate_policy`. Models are referenced by generic tiers (e.g., `small`, `large`, `fast`) which the parent agent maps to concrete model names in AGENTS.md.
 
+**Auto-complexity scoring:** Tasks are automatically scored for complexity at creation time (both `pm_task_create` and `pm_orchestrate_plan`). The scorer uses weighted heuristics: architectural keywords, key files count, acceptance criteria count, dependency count, priority, and constraints. This assigns a `TaskCategory` (e.g., `code-complex`, `code-simple`) which drives `by_category` routing. Explicit `category` can be passed to override auto-scoring.
+
 **ProjectPolicy.model_routing fields:**
 - `default` — fallback tier for all tasks
 - `review` — tier for review stages (when `review_required=True`)
 - `by_category` — dict mapping TaskCategory → tier (e.g., `{"code-complex": "large", "docs": "fast"}`)
 - `by_type` — dict mapping TaskType → tier (e.g., `{"dev": "small", "planning": "large"}`)
+- `by_priority` — dict mapping TaskPriority → tier (e.g., `{"critical": "large", "low": "fast"}`)
 - `by_task` — dict mapping task ID → tier for task-specific overrides
 
 **Resolution hierarchy** (first match wins):
 1. `by_task[task.id]` — task-specific override
-2. `by_category[task.category]` — complexity-based routing
+2. `by_category[task.category]` — complexity-based routing (auto-scored)
 3. `by_type[task.type]` — domain-based routing
-4. `review` — only for review stages (when `is_review=True`)
-5. `default` — final fallback
-6. `None` — no recommendation
+4. `by_priority[task.priority]` — priority-based routing
+5. `review` — only for review stages (when `is_review=True`)
+6. `default` — final fallback
+7. `None` — no recommendation
 
 **Tool integration:**
 
-- `pm_orchestrate_policy(project, model_default=..., model_review=..., model_by_category=..., model_by_type=...)` — configure routing. Call with no args to view.
+- `pm_orchestrate_policy(project, model_default=..., model_review=..., model_by_category=..., model_by_type=..., model_by_priority=...)` — configure routing. Call with no args to view.
 - `pm_orchestrate_next` includes `**Recommended Model:** <tier>` in dispatch output (only if tier is configured).
 - `pm_orchestrate_report` includes `Review model: <tier>` when `review_required=True` and review stage begins.
 - `pm_agent_suggest(project, task_id)` includes `Recommended model: <tier>` in suggestions.
@@ -111,6 +115,7 @@ Configure per-project model tier preferences via `pm_orchestrate_policy`. Models
 src/agendum/
   server.py        — FastMCP wiring, lazy store init
   models.py        — All Pydantic models (Task, ExecutionPlan, ExecutionTrace, etc.)
+  complexity.py    — Heuristic complexity scorer for auto-assigning TaskCategory
   task_graph.py    — topological_levels(), resolve_completions(), detect_cycles()
   store/           — File-backed stores with locking
   tools/           — MCP tool modules (board, project, task, memory, agent, utils)

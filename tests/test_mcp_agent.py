@@ -76,7 +76,9 @@ async def test_agent_suggest_dev_task(mcp_server):
     await _init(mcp)
     await call(mcp, "pm_task_create", project="proj", title="Build feature", task_type="dev")
     result = await call(mcp, "pm_agent_suggest", project="proj", task_id="task-001")
-    assert "code-complex" in result
+    # Simple title with no files/criteria/deps auto-scores as code-simple
+    assert "code-simple" in result
+    assert "dev" in result
 
 
 async def test_agent_suggest_docs_task(mcp_server):

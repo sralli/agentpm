@@ -115,28 +115,30 @@ def register(mcp: FastMCP, stores: Any, agents: dict[str, Agent]) -> None:
         if not task:
             return f"Error: task '{task_id}' not found."
 
-        routing = {
-            "dev": ("code-complex", "Claude Opus / GPT-5.4 for architecture; Claude Sonnet for simple fixes"),
-            "docs": ("docs", "Claude Sonnet / Gemini Flash for documentation"),
-            "email": ("email", "Fast model for email drafts"),
-            "planning": ("planning", "Claude Opus in plan mode for specs and architecture"),
-            "research": ("research", "Agent with web search access"),
-            "review": ("review", "Use a DIFFERENT model than the one that wrote the code"),
-            "personal": ("personal", "Any available agent"),
-            "ops": ("code-complex", "Claude Opus for infrastructure and ops tasks"),
+        # Guidance per task type (model-name-free — tiers come from policy).
+        type_guidance = {
+            "dev": "Use a capable model for architecture; fast tier for simple fixes",
+            "docs": "Documentation tasks — fast tier is usually sufficient",
+            "email": "Email drafts — fast tier",
+            "planning": "Specs and architecture — use the most capable tier",
+            "research": "Agent with web search access recommended",
+            "review": "Use a DIFFERENT model than the one that wrote the code",
+            "personal": "Any available agent",
+            "ops": "Infrastructure and ops — use a capable tier",
         }
 
         task_type = task.type.value
-        category, suggestion = routing.get(task_type, ("unspecified", "Any capable agent"))
+        category = task.category.value if task.category else "unscored"
+        guidance = type_guidance.get(task_type, "Any capable agent")
 
         policy = stores.project.get_policy(project)
         recommended = resolve_model(policy, task)
 
         lines = [
             f"Task: {task.id} ({task.title})",
-            f"Type: {task_type} -> Category: {category}",
+            f"Type: {task_type} | Category: {category}",
         ]
         if recommended:
             lines.append(f"Recommended model: {recommended}")
-        lines.append(f"Suggestion: {suggestion}")
+        lines.append(f"Guidance: {guidance}")
         return "\n".join(lines)

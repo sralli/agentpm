@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agendum.models import ModelRouting, ProjectPolicy, Task, TaskCategory, TaskType
+from agendum.models import ModelRouting, ProjectPolicy, Task, TaskCategory, TaskPriority, TaskType
 from agendum.tools.orchestrator._helpers import resolve_model
 from tests.conftest import _create_and_approve, call
 
@@ -75,6 +75,40 @@ class TestResolveModel:
             )
         )
         assert resolve_model(policy, _task(), is_review=True) == "medium"
+
+    def test_by_priority_fallback(self):
+        policy = ProjectPolicy(
+            model_routing=ModelRouting(by_priority={"critical": "large"})
+        )
+        task = Task(id="t-001", project="test", title="Urgent fix", type=TaskType.DEV, priority=TaskPriority.CRITICAL)
+        assert resolve_model(policy, task) == "large"
+
+    def test_by_priority_not_matched(self):
+        policy = ProjectPolicy(
+            model_routing=ModelRouting(by_priority={"critical": "large"})
+        )
+        task = Task(id="t-001", project="test", title="Low fix", type=TaskType.DEV, priority=TaskPriority.LOW)
+        assert resolve_model(policy, task) is None
+
+    def test_type_beats_priority(self):
+        policy = ProjectPolicy(
+            model_routing=ModelRouting(
+                by_type={"dev": "medium"},
+                by_priority={"critical": "large"},
+            )
+        )
+        task = Task(id="t-001", project="test", title="Fix", type=TaskType.DEV, priority=TaskPriority.CRITICAL)
+        assert resolve_model(policy, task) == "medium"
+
+    def test_priority_beats_review(self):
+        policy = ProjectPolicy(
+            model_routing=ModelRouting(
+                review="small",
+                by_priority={"critical": "large"},
+            )
+        )
+        task = Task(id="t-001", project="test", title="Fix", type=TaskType.DEV, priority=TaskPriority.CRITICAL)
+        assert resolve_model(policy, task, is_review=True) == "large"
 
 
 # --- Integration tests: policy tool ---

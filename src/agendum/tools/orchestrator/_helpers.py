@@ -18,9 +18,10 @@ def resolve_model(
     1. by_task[task.id]
     2. by_category[task.category]
     3. by_type[task.type]
-    4. review (only when is_review=True)
-    5. default
-    6. None (no recommendation)
+    4. by_priority[task.priority]
+    5. review (only when is_review=True)
+    6. default
+    7. None (no recommendation)
     """
     routing = policy.model_routing
 
@@ -32,6 +33,9 @@ def resolve_model(
 
     if task.type and task.type.value in routing.by_type:
         return routing.by_type[task.type.value]
+
+    if task.priority and task.priority.value in routing.by_priority:
+        return routing.by_priority[task.priority.value]
 
     if is_review and routing.review:
         return routing.review
