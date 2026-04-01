@@ -23,6 +23,7 @@ _MUTABLE_FIELDS = frozenset(
         "tags",
         "notes",
         "decisions",
+        "verified",
     }
 )
 

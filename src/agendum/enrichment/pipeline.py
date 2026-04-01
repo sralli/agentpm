@@ -47,6 +47,7 @@ class ContextEnricher:
         project: str,
         disabled_sources: list[str] | None = None,
         max_context_chars: int = 8000,
+        field_budgets: dict[str, int] | None = None,
     ) -> WorkPackage:
         """Enrich a work package with live data from all registered sources.
 
@@ -61,18 +62,24 @@ class ContextEnricher:
             except Exception:
                 print(f"agendum: enrichment source '{source.name}' failed, skipping", file=sys.stderr)
 
-        return self._apply_budget(package, max_context_chars)
+        return self._apply_budget(package, max_context_chars, field_budgets)
 
-    def _apply_budget(self, package: WorkPackage, max_chars: int) -> WorkPackage:
+    def _apply_budget(
+        self, package: WorkPackage, max_chars: int, field_budgets: dict[str, int] | None = None
+    ) -> WorkPackage:
         """Truncate enrichment fields to stay within budget.
 
         Priority (highest first): project_rules, dependency_context, memory_context.
         """
+        defaults = {"project_rules": 3000, "dependency_context": 2000, "memory_context": 2000}
+        budgets = field_budgets or defaults
         budget = _BudgetAllocator(max_chars)
 
-        project_rules = budget.allocate(package.project_rules, 3000, "project_rules")
-        dependency_context = budget.allocate(package.dependency_context, 2000, "dependency_context")
-        memory_context = budget.allocate(package.memory_context, 2000, "memory_context")
+        project_rules = budget.allocate(package.project_rules, budgets.get("project_rules", 3000), "project_rules")
+        dependency_context = budget.allocate(
+            package.dependency_context, budgets.get("dependency_context", 2000), "dependency_context"
+        )
+        memory_context = budget.allocate(package.memory_context, budgets.get("memory_context", 2000), "memory_context")
 
         return package.model_copy(
             update={
@@ -104,5 +111,5 @@ class _BudgetAllocator:
 
         truncated = content[:limit].rsplit("\n", 1)[0]  # truncate at last newline
         suffix = f"\n...({field_name} truncated)"
-        self._remaining -= len(truncated) + len(suffix)
+        self._remaining = max(0, self._remaining - len(truncated) - len(suffix))
         return truncated + suffix

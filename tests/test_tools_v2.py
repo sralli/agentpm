@@ -122,6 +122,21 @@ async def test_pm_next(v2_server):
     assert item.status.value == "in_progress"
 
 
+async def test_pm_next_includes_complexity(v2_server):
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item(
+        "proj",
+        "Big refactor",
+        key_files=["a.py", "b.py", "c.py", "d.py"],
+        acceptance_criteria=["passes tests", "no regressions", "docs updated"],
+    )
+    result = await call(mcp, "pm_next", project="proj")
+    assert "Complexity:" in result
+    assert "4-file" in result
+
+
 async def test_pm_next_no_tasks(v2_server):
     mcp, stores = v2_server
     stores.project.init_board("test")
@@ -283,3 +298,114 @@ async def test_pm_ingest(v2_server, tmp_path):
     assert item3 is not None
     assert "item-001" in item3.depends_on
     assert "item-002" in item3.depends_on
+
+
+# ── Feature 7: Verification Gate ──────────────────────────────────────
+
+
+async def test_pm_done_verified(v2_server):
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    result = await call(
+        mcp,
+        "pm_done",
+        project="proj",
+        item_id="item-001",
+        verified=True,
+        verification_notes="All tests pass",
+        auto_extract=False,
+    )
+    assert "done" in result.lower()
+    item = stores.board.get_item("proj", "item-001")
+    assert item.verified is True
+    # Check progress has "Verified"
+    assert any("Verified" in p.message for p in item.progress)
+    assert any("All tests pass" in p.message for p in item.progress)
+
+
+async def test_pm_done_unverified(v2_server):
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    result = await call(
+        mcp,
+        "pm_done",
+        project="proj",
+        item_id="item-001",
+        auto_extract=False,
+    )
+    assert "done" in result.lower()
+    item = stores.board.get_item("proj", "item-001")
+    assert item.verified is False
+    assert any("Unverified" in p.message for p in item.progress)
+
+
+async def test_pm_done_verified_persists_through_save_load(v2_server):
+    """verified field must survive serialization round-trip."""
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    await call(
+        mcp,
+        "pm_done",
+        project="proj",
+        item_id="item-001",
+        verified=True,
+        auto_extract=False,
+    )
+    # Re-read from disk
+    item = stores.board.get_item("proj", "item-001")
+    assert item.verified is True
+
+
+# ── Feature 9: Auto-Extract from Git ──────────────────────────────────
+
+
+async def test_pm_done_auto_extract_no_git(v2_server):
+    """auto_extract gracefully handles non-git environment."""
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    # This should work even without git — graceful fallback
+    result = await call(
+        mcp,
+        "pm_done",
+        project="proj",
+        item_id="item-001",
+        auto_extract=True,
+    )
+    assert "done" in result.lower()
+
+
+async def test_pm_done_auto_extract_skipped_when_files_provided(v2_server):
+    """When files_changed is provided, auto_extract should not override it."""
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    result = await call(
+        mcp,
+        "pm_done",
+        project="proj",
+        item_id="item-001",
+        files_changed="manual.py",
+        auto_extract=True,
+    )
+    assert "done" in result.lower()
+    item = stores.board.get_item("proj", "item-001")
+    assert any("manual.py" in p.message for p in item.progress)
+
+
+async def test_pm_next_hints_verification(v2_server):
+    """pm_next output should hint about verified=True."""
+    mcp, stores = v2_server
+    stores.project.init_board("test")
+    stores.project.create_project("proj")
+    stores.board.create_item("proj", "Task A")
+    result = await call(mcp, "pm_next", project="proj")
+    assert "verified=True" in result

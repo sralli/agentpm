@@ -25,28 +25,41 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
     """Register all 11 v2 MCP tools on the given FastMCP instance."""
 
     # ── 1. pm_init ──────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Initialize the agendum board directory. Call once per repository or home directory to set up project tracking. Creates .agendum/ with projects, learnings, and memory subdirectories. Returns confirmation. Next step: create a project with pm_project."
+    )
     def pm_init(name: str = "agendum") -> str:
         try:
             stores.project.init_board(name)
-            return f"Board '{name}' initialized."
+            return (
+                f"Board '{name}' initialized." + '\n\n> Next: pm_project("create", "my-project", "Project description")'
+            )
         except Exception as e:
             return f"Error: {e}"
 
     # ── 2. pm_project ───────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Create, list, or get projects. Actions: 'create' (requires name), 'list' (shows all projects), 'get' (shows project details with spec/plan excerpts). Call after pm_init to set up a project, or anytime to inspect existing projects."
+    )
     def pm_project(action: str, name: str = "", description: str = "") -> str:
         try:
             if action == "create":
                 if not name:
                     return "Error: name is required for create"
                 proj = stores.project.create_project(name, description)
-                return f"Project '{proj.name}' created."
+                return (
+                    f"Project '{proj.name}' created."
+                    + f'\n\n> Next: pm_ingest("{name}", "path/to/plan.md") or pm_add("{name}", "task title")'
+                )
             elif action == "list":
                 projects = stores.project.list_projects()
                 if not projects:
                     return "No projects found."
-                return "**Projects:**\n" + "\n".join(f"- {p}" for p in projects)
+                return (
+                    "**Projects:**\n"
+                    + "\n".join(f"- {p}" for p in projects)
+                    + '\n\n> Next: pm_status("project-name") or pm_project("get", "project-name")'
+                )
             elif action == "get":
                 if not name:
                     return "Error: name is required for get"
@@ -62,14 +75,16 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                 if proj.plan:
                     excerpt = proj.plan[:500]
                     lines.append(f"\n**Plan excerpt:**\n{excerpt}")
-                return "\n".join(lines)
+                return "\n".join(lines) + f'\n\n> Next: pm_next("{name}") or pm_board("{name}")'
             else:
                 return f"Error: unknown action '{action}'. Use create, list, or get."
         except Exception as e:
             return f"Error: {e}"
 
     # ── 3. pm_status ────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Get a status overview for one or all projects. Shows item counts by status, recent progress, recent decisions, and suggested next task. Call at the start of a session to understand current state, or after completing work to see what's next."
+    )
     def pm_status(project: str = "") -> str:
         try:
             if not project:
@@ -85,7 +100,10 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                     lines.append(f"## {p} ({total} items)")
                     lines.append(_format_counts(counts))
                     lines.append("")
-                return "\n".join(lines)
+                return (
+                    "\n".join(lines)
+                    + '\n\n> Next: pm_status("project-name") for details, or pm_next("project-name") to start working'
+                )
 
             # Single-project status
             items = stores.board.list_items(project)
@@ -121,12 +139,14 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             if suggested:
                 lines.append(f"\n**Suggested Next:** {suggested.id} — {suggested.title}")
 
-            return "\n".join(lines)
+            return "\n".join(lines) + f'\n\n> Next: pm_next("{project}") to get a scoped work package'
         except Exception as e:
             return f"Error: {e}"
 
     # ── 4. pm_add ───────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Add a new item to a project board. Supports type (dev/docs/ops/research/review/planning/personal/email), priority (critical/high/medium/low), tags, dependencies, acceptance criteria, key files, constraints, and notes. Use for ad-hoc tasks not from a plan file."
+    )
     def pm_add(
         project: str,
         title: str,
@@ -152,12 +172,17 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                 constraints=_parse_csv(constraints),
                 notes=notes,
             )
-            return f"Created {item.id}: {item.title}"
+            return (
+                f"Created {item.id}: {item.title}"
+                + f'\n\n> Next: pm_next("{project}") to get a work package, or pm_add("{project}", "another task") to add more'
+            )
         except Exception as e:
             return f"Error: {e}"
 
     # ── 5. pm_board ─────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="View the project board with optional filters. Filter by status (pending/in_progress/blocked/done), tag, or type. Returns a markdown table of all matching items. Use to survey the full backlog or check status of specific categories."
+    )
     def pm_board(project: str, status: str = "", tag: str = "", type: str = "") -> str:
         try:
             status_filter = TaskStatus(status) if status else None
@@ -170,12 +195,14 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             for item in items:
                 tag_str = ", ".join(item.tags) if item.tags else ""
                 lines.append(f"| {item.id} | {item.title} | {item.status} | {item.priority} | {tag_str} |")
-            return "\n".join(lines)
+            return "\n".join(lines) + f'\n\n> Next: pm_next("{project}") to get the next work package'
         except Exception as e:
             return f"Error: {e}"
 
     # ── 6. pm_ingest ────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Import tasks from a markdown plan file into the project board. Parses headings as task titles, extracts acceptance criteria, key files, and dependencies. Creates bounded board items with dependency tracking. Call after creating a project to populate the board from an existing plan."
+    )
     def pm_ingest(project: str, plan_file: str) -> str:
         try:
             content = Path(plan_file).read_text(encoding="utf-8")
@@ -197,12 +224,14 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                 lines.append(f"WARNING: {len(cycles)} dependency cycle(s) detected!")
                 for cycle in cycles:
                     lines.append(f"  Cycle: {' -> '.join(cycle)}")
-            return "\n".join(lines)
+            return "\n".join(lines) + f'\n\n> Next: pm_next("{project}") to get your first work package'
         except Exception as e:
             return f"Error: {e}"
 
     # ── 7. pm_next ──────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Get the next scoped work package. Returns a bounded context packet with task details, acceptance criteria, relevant memory, dependency context, and project rules. Automatically marks the task as in-progress. Call at the start of a work session or after completing a task with pm_done."
+    )
     def pm_next(project: str) -> str:
         try:
             items = stores.board.list_items(project)
@@ -210,21 +239,37 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             if not suggested:
                 return "No tasks available. All tasks are done, blocked, or in progress."
 
+            complexity, estimated_scope = _compute_complexity(suggested)
+
             package = WorkPackage(
                 item=suggested,
                 scope=", ".join(suggested.key_files) if suggested.key_files else "",
                 exit_criteria=list(suggested.acceptance_criteria),
                 constraints=list(suggested.constraints),
                 key_files=list(suggested.key_files),
+                complexity=complexity,
+                estimated_scope=estimated_scope,
             )
 
-            package = enricher.enrich(package, suggested, project)
+            # Budget scales with task complexity
+            complexity_budgets = {
+                "trivial": (4000, {"project_rules": 1500, "dependency_context": 1000, "memory_context": 1000}),
+                "small": (6000, {"project_rules": 2000, "dependency_context": 1500, "memory_context": 1500}),
+                "medium": (8000, {"project_rules": 2500, "dependency_context": 2000, "memory_context": 2000}),
+                "large": (10000, {"project_rules": 3000, "dependency_context": 2500, "memory_context": 2500}),
+            }
+            max_chars, field_budgets = complexity_budgets.get(complexity, complexity_budgets["medium"])
+            package = enricher.enrich(
+                package, suggested, project, max_context_chars=max_chars, field_budgets=field_budgets
+            )
 
             # Mark as in_progress
             stores.board.update_item(project, suggested.id, status=TaskStatus.IN_PROGRESS)
 
             # Format output
             lines = [f"## Task: {suggested.title}\n"]
+            lines.append(f"**Complexity:** {complexity} ({estimated_scope})")
+            lines.append("")
             if package.key_files:
                 lines.append("**Scope:**")
                 lines.append(f"- Files to create/modify: {', '.join(package.key_files)}")
@@ -247,12 +292,17 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                 for constraint in package.constraints:
                     lines.append(f"- {constraint}")
                 lines.append("")
-            return "\n".join(lines)
+            return (
+                "\n".join(lines)
+                + f'\n\n> Next: Implement the task, verify it works (run tests), then call pm_done("{project}", "{suggested.id}", verified=True) when finished'
+            )
         except Exception as e:
             return f"Error: {e}"
 
     # ── 8. pm_done ──────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Report task completion. Records decisions, patterns, and learnings to project memory, logs files changed, and auto-unblocks dependent tasks. Pass decisions for architectural choices worth remembering, patterns for reusable conventions, and learnings for project-scoped insights. Set verified=True after running tests to mark as verified."
+    )
     def pm_done(
         project: str,
         item_id: str,
@@ -260,15 +310,39 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
         patterns: str = "",
         files_changed: str = "",
         notes: str = "",
+        learnings: str = "",
+        verified: bool = False,
+        verification_notes: str = "",
+        auto_extract: bool = True,
     ) -> str:
         try:
-            # Set status to done
-            stores.board.update_item(project, item_id, status=TaskStatus.DONE)
+            # Auto-extract from git if no files_changed provided
+            if auto_extract and not files_changed:
+                from agendum.env_context import get_git_diff_stat, get_last_commit_message
+
+                diff_stat = get_git_diff_stat()
+                commit_msg = get_last_commit_message()
+                if diff_stat:
+                    files_changed = f"(auto-extracted from latest commit)\n{diff_stat}"
+                if commit_msg and not notes:
+                    notes = f"Latest commit: {commit_msg}"
+
+            # Set status to done and verified flag
+            stores.board.update_item(project, item_id, status=TaskStatus.DONE, verified=verified)
 
             # Add progress entry
-            progress_msg = f"Completed. Files: {files_changed}" if files_changed else "Completed."
+            progress_parts = []
+            if verified:
+                progress_parts.append("Verified")
+                if verification_notes:
+                    progress_parts.append(verification_notes)
+            else:
+                progress_parts.append("Unverified completion")
+            if files_changed:
+                progress_parts.append(f"Files: {files_changed}")
             if notes:
-                progress_msg += f" Notes: {notes}"
+                progress_parts.append(f"Notes: {notes}")
+            progress_msg = ". ".join(progress_parts) + "."
             stores.board.add_progress(project, item_id, "agent", progress_msg)
 
             # Handle decisions
@@ -289,6 +363,14 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             for p in pattern_list:
                 stores.memory.append("patterns", p, author="agent")
 
+            # Handle learnings (project-scoped)
+            learning_list = _parse_csv(learnings)
+            if learning_list:
+                item = stores.board.get_item(project, item_id)
+                item_tags = list(item.tags) if item else []
+                for entry in learning_list:
+                    stores.learnings.add_learning(entry, item_tags, project=project)
+
             # Resolve completions — unblock dependents
             all_items = stores.board.list_items(project)
             unblocked = resolve_completions(all_items, item_id)
@@ -298,68 +380,157 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             result = f"Marked {item_id} as done."
             if unblocked:
                 result += f" Unblocked: {', '.join(unblocked)}"
+                result += f'\n\n> Next: pm_next("{project}") to continue with newly unblocked tasks'
+            else:
+                result += f'\n\n> Next: pm_next("{project}") for the next task, or pm_status("{project}") for overview'
             return result
         except Exception as e:
             return f"Error: {e}"
 
     # ── 9. pm_block ─────────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Report a task as blocked with a reason. Updates the task status and logs the blocker. Use when a task cannot proceed due to external dependencies, missing information, or upstream blockers."
+    )
     def pm_block(project: str, item_id: str, reason: str) -> str:
         try:
             stores.board.update_item(project, item_id, status=TaskStatus.BLOCKED)
             stores.board.add_progress(project, item_id, "agent", f"Blocked: {reason}")
-            return f"Blocked {item_id}: {reason}"
+            return (
+                f"Blocked {item_id}: {reason}"
+                + f'\n\n> Next: Resolve the blocker, then pm_done("{project}", "{item_id}") or pm_next("{project}") for other tasks'
+            )
         except Exception as e:
             return f"Error: {e}"
 
     # ── 10. pm_memory ───────────────────────────────────────────────────
-    @mcp.tool()
+    @mcp.tool(
+        description="Read, write, append, or search project memory. Scopes: 'decisions' (architectural choices), 'patterns' (conventions and gotchas), 'project' (general project knowledge), 'learnings' (cross-project insights). Use to persist or retrieve knowledge across sessions."
+    )
     def pm_memory(action: str, scope: str = "", content: str = "", query: str = "", author: str = "") -> str:
         try:
             if action == "read":
                 if not scope:
                     return "Error: scope is required for read"
                 result = stores.memory.read(scope)
-                return result if result else f"No content in scope '{scope}'."
+                result = result if result else f"No content in scope '{scope}'."
+                return (
+                    result
+                    + '\n\n> Next: pm_next("project") to continue working, or pm_memory("append", "scope", "new insight") to add more'
+                )
             elif action == "write":
                 if not scope or not content:
                     return "Error: scope and content are required for write"
                 stores.memory.write(scope, content)
-                return f"Wrote to memory scope '{scope}'."
+                return (
+                    f"Wrote to memory scope '{scope}'."
+                    + '\n\n> Next: Continue working or pm_next("project") for the next task'
+                )
             elif action == "append":
                 if not scope or not content:
                     return "Error: scope and content are required for append"
                 stores.memory.append(scope, content, author=author or None)
-                return f"Appended to memory scope '{scope}'."
+                return (
+                    f"Appended to memory scope '{scope}'."
+                    + '\n\n> Next: Continue working or pm_next("project") for the next task'
+                )
             elif action == "search":
                 if not query:
                     return "Error: query is required for search"
                 results = stores.memory.search(query)
                 if not results:
-                    return "No matches found."
+                    return (
+                        "No matches found."
+                        + '\n\n> Next: pm_next("project") to continue working, or pm_memory("append", "scope", "new insight") to add more'
+                    )
                 lines = ["**Memory Search Results:**"]
                 for s, matches in results.items():
                     lines.append(f"\n__{s}__:")
                     for m in matches:
                         lines.append(f"- {m}")
-                return "\n".join(lines)
+                return (
+                    "\n".join(lines)
+                    + '\n\n> Next: pm_next("project") to continue working, or pm_memory("append", "scope", "new insight") to add more'
+                )
             else:
                 return f"Error: unknown action '{action}'. Use read, write, append, or search."
         except Exception as e:
             return f"Error: {e}"
 
     # ── 11. pm_learn ────────────────────────────────────────────────────
-    @mcp.tool()
-    def pm_learn(content: str, tags: str = "", source_project: str = "") -> str:
+    @mcp.tool(
+        description="Record a learning. Pass 'project' for project-scoped learning, omit for global cross-project learning. Tagged insights enrich future work packages. Use for patterns, gotchas, or conventions. Examples: 'Clerk proxy.ts must be at app/ level' tagged 'auth,clerk,nextjs'."
+    )
+    def pm_learn(content: str, tags: str = "", source_project: str = "", project: str = "") -> str:
         try:
             tag_list = _parse_csv(tags)
-            learning_id = stores.learnings.add_learning(content, tag_list, source_project or None)
-            return f"Learning {learning_id} added."
+            learning_id = stores.learnings.add_learning(
+                content, tag_list, source_project or None, project=project or None
+            )
+            scope_label = f"project '{project}'" if project else "global"
+            return (
+                f"Learning {learning_id} added ({scope_label})."
+                + '\n\n> Next: Continue working or pm_next("project") for the next task'
+            )
         except Exception as e:
             return f"Error: {e}"
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────
+
+
+def _compute_complexity(item: BoardItem) -> tuple[str, str]:
+    """Compute complexity level and estimated scope from item metadata.
+
+    Returns (complexity_level, estimated_scope_description).
+    """
+    # Base level from key_files count
+    file_count = len(item.key_files)
+    if file_count <= 1:
+        level = 0  # trivial
+    elif file_count <= 3:
+        level = 1  # small
+    elif file_count <= 6:
+        level = 2  # medium
+    else:
+        level = 3  # large
+
+    # Adjust for acceptance criteria count
+    ac_count = len(item.acceptance_criteria)
+    if ac_count <= 1:
+        level -= 1
+    elif ac_count >= 4:
+        level += 1
+
+    # Adjust for dependency count
+    dep_count = len(item.depends_on)
+    if dep_count == 0:
+        level -= 1
+    elif dep_count >= 3:
+        level += 1
+
+    # Clamp to valid range
+    level = max(0, min(3, level))
+
+    levels = ["trivial", "small", "medium", "large"]
+    complexity = levels[level]
+
+    # Build estimated scope description
+    parts = []
+    if file_count == 0:
+        parts.append("No files specified")
+    elif file_count == 1:
+        parts.append(f"Single-file change ({item.key_files[0]})")
+    else:
+        parts.append(f"{file_count}-file change")
+
+    if ac_count > 0:
+        parts.append(f"{ac_count} criteria")
+    if dep_count > 0:
+        parts.append(f"{dep_count} dependencies")
+
+    estimated_scope = ", ".join(parts)
+
+    return complexity, estimated_scope
 
 
 def _count_by_status(items: list[BoardItem]) -> dict[str, int]:

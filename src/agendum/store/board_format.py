@@ -107,6 +107,7 @@ def board_item_from_file(path: Path) -> BoardItem:
         notes=notes,
         progress=_parse_progress(progress_text),
         decisions=_extract_list_items(decisions_text),
+        verified=bool(meta.get("verified", False)),
     )
 
 
@@ -127,6 +128,7 @@ def board_item_to_markdown(item: BoardItem) -> str:
         "tags": item.tags,
         "created": item.created.isoformat() if isinstance(item.created, datetime) else item.created,
         "updated": item.updated.isoformat() if isinstance(item.updated, datetime) else item.updated,
+        "verified": item.verified,
     }
 
     # Remove None values and empty lists

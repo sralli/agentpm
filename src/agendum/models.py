@@ -101,6 +101,7 @@ class BoardItem(BaseModel):
     updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     progress: list[ProgressEntry] = Field(default_factory=list)
     decisions: list[str] = Field(default_factory=list)
+    verified: bool = False
 
 
 # Type alias: task_graph.py uses Task, which is now BoardItem
@@ -121,3 +122,5 @@ class WorkPackage(BaseModel):
     memory_context: str = ""
     project_rules: str = ""
     pointers: list[str] = Field(default_factory=list)
+    complexity: str = ""  # trivial, small, medium, large
+    estimated_scope: str = ""  # human-readable one-liner

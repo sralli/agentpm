@@ -79,6 +79,81 @@ claude mcp add agendum -- uvx agendum --home serve
 claude mcp add agendum -- uvx agendum --home serve
 ```
 
+### Cursor
+
+Add to `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "agendum": {
+      "command": "uvx",
+      "args": ["agendum", "--home", "serve"]
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "agendum": {
+      "command": "uvx",
+      "args": ["agendum", "--home", "serve"]
+    }
+  }
+}
+```
+
+### VS Code (GitHub Copilot)
+
+Add to `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "agendum": {
+      "command": "uvx",
+      "args": ["agendum", "--home", "serve"]
+    }
+  }
+}
+```
+
+### Cline
+
+Add to your Cline MCP settings (Settings > MCP Servers > Edit):
+
+```json
+{
+  "mcpServers": {
+    "agendum": {
+      "command": "uvx",
+      "args": ["agendum", "--home", "serve"]
+    }
+  }
+}
+```
+
+### Roo Code
+
+Add to your Roo Code MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "agendum": {
+      "command": "uvx",
+      "args": ["agendum", "--home", "serve"]
+    }
+  }
+}
+```
+
 ### Claude Desktop
 
 Add to your `claude_desktop_config.json`:
@@ -94,22 +169,12 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-### Cursor
-
-Add to Cursor Settings > MCP Servers:
-
-```json
-{
-  "agendum": {
-    "command": "uvx",
-    "args": ["agendum", "--home", "serve"]
-  }
-}
-```
-
 ### CLI (standalone)
 
 ```bash
+pip install agendum
+# or: uvx agendum --help
+
 agendum init                                    # Initialize board
 agendum project create my-app                   # Create a project
 agendum status                                  # Dashboard overview
@@ -121,17 +186,17 @@ agendum status                                  # Dashboard overview
 
 | Tool | Purpose |
 |------|---------|
-| `pm_status` | Board overview — all projects, items, progress |
+| `pm_init` | Initialize agendum board directory (optional — auto-initializes on first use) |
+| `pm_project` | Create, list, or get projects |
+| `pm_status` | Board overview — item counts, recent progress, suggested next task |
 | `pm_add` | Add a board item to a project |
-| `pm_ingest` | Ingest a plan file into bounded board items |
+| `pm_board` | View and filter the project board |
+| `pm_ingest` | Import a plan file into bounded board items with dependencies |
 | `pm_next` | Get next scoped work package with enriched context |
 | `pm_done` | Complete an item, record decisions and patterns |
-| `pm_update` | Update an item (title, priority, status, details) |
-| `pm_get` | Get full details of a board item |
-| `pm_project_create` | Create a new project |
-| `pm_project_list` | List all projects |
-| `pm_memory` | Read/write project memory |
-| `pm_learn` | Record or query cross-project learnings |
+| `pm_block` | Report a task as blocked with reason |
+| `pm_memory` | Read, write, append, or search project memory |
+| `pm_learn` | Record cross-project or project-scoped learnings |
 
 ### Key Capabilities
 
@@ -154,9 +219,11 @@ All state is stored as human-readable Markdown files with YAML frontmatter:
 ├── projects/
 │   ├── webapp/
 │   │   ├── project.yaml         # Project metadata
-│   │   └── board/
-│   │       ├── item-001.md      # Markdown + YAML frontmatter
-│   │       └── item-002.md
+│   │   ├── board/
+│   │   │   ├── item-001.md      # Markdown + YAML frontmatter
+│   │   │   └── item-002.md
+│   │   └── learnings/           # Project-scoped learnings
+│   │       └── learning-001.md
 │   └── personal/
 │       └── board/...
 ├── learnings/                   # Cross-project learnings

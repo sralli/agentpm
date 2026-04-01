@@ -30,7 +30,7 @@ async def v2_server(tmp_path):
     root.mkdir()
 
     from agendum.enrichment.pipeline import ContextEnricher
-    from agendum.enrichment.sources import DependencySource, MemorySource, ProjectRulesSource
+    from agendum.enrichment.sources import DependencySource, MemorySource, ProjectLearningsSource, ProjectRulesSource
     from agendum.store.board_store import BoardStore
     from agendum.store.learnings_store import LearningsStore
     from agendum.store.memory_store import MemoryStore
@@ -54,6 +54,7 @@ async def v2_server(tmp_path):
     enricher.register(ProjectRulesSource(root))
     enricher.register(MemorySource(stores.memory))
     enricher.register(DependencySource(stores.board))
+    enricher.register(ProjectLearningsSource(stores.learnings))
 
     mcp = FastMCP("agendum-test-v2")
     from agendum.tools import register

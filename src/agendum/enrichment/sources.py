@@ -119,6 +119,65 @@ class DependencySource:
         )
 
 
+class ProjectLearningsSource:
+    """Enriches work packages with project-specific learnings."""
+
+    name = "project_learnings"
+
+    def __init__(self, learnings_store: object):
+        self._store = learnings_store
+
+    def enrich(self, package: WorkPackage, item: BoardItem, project: str) -> WorkPackage:
+        results: list[dict] = []
+        seen_ids: set[str] = set()
+
+        def _add(items: list[dict]) -> None:
+            for r in items:
+                rid = r.get("id", "")
+                if rid not in seen_ids:
+                    seen_ids.add(rid)
+                    results.append(r)
+
+        # Search by significant words from item title (skip short words)
+        for word in item.title.split():
+            if len(word) >= 4:
+                _add(self._store.search_project_learnings(project, word))  # type: ignore[union-attr]
+
+        # Also search by tags
+        for tag in item.tags:
+            _add(self._store.list_project_learnings(project, tag=tag))  # type: ignore[union-attr]
+
+        if not results:
+            return package
+
+        lines = []
+        for learning in results[:5]:
+            tags_str = ", ".join(learning.get("tags", []))
+            content = learning.get("content", "")
+            if tags_str:
+                lines.append(f"- [{tags_str}] {content}")
+            else:
+                lines.append(f"- {content}")
+
+        existing = package.memory_context
+        learnings_text = "\n".join(lines)
+        combined = (
+            f"{existing}\n\n**Project Learnings:**\n{learnings_text}"
+            if existing
+            else f"**Project Learnings:**\n{learnings_text}"
+        )
+
+        pointers = list(package.pointers)
+        pointers.append(f'pm_learn(project="{project}") for project-specific learnings')
+
+        return package.model_copy(
+            update={
+                "memory_context": combined,
+                "pointers": pointers,
+            }
+        )
+
+
 def _find_git_root(start: Path, max_depth: int = 10) -> Path | None:
     """Walk up from start to find the nearest .git/ directory.
 
