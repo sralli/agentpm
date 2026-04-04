@@ -1,4 +1,4 @@
-"""MCP tool registrations — 11 tools from pm_init through pm_learn."""
+"""MCP tool registrations — 12 tools from pm_init through pm_onboard."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from agendum.models import BoardItem, TaskPriority, TaskStatus, TaskType, WorkPackage
+from agendum.store import parse_csv as _parse_csv
 from agendum.task_graph import (
     detect_cycles,
     resolve_completions,
@@ -14,15 +15,8 @@ from agendum.task_graph import (
 )
 
 
-def _parse_csv(value: str) -> list[str]:
-    """Parse comma-separated string into list, stripping whitespace."""
-    if not value:
-        return []
-    return [item.strip() for item in value.split(",") if item.strip()]
-
-
 def register(mcp, stores, enricher) -> None:  # noqa: C901
-    """Register all 11 v2 MCP tools on the given FastMCP instance."""
+    """Register all 12 MCP tools on the given FastMCP instance."""
 
     # ── 1. pm_init ──────────────────────────────────────────────────────
     @mcp.tool(
@@ -87,11 +81,22 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
     )
     def pm_status(project: str = "") -> str:
         try:
+            # Check if onboarding is pending
+            onboarding_hint = ""
+            try:
+                config = stores.project.read_config()
+                if not config.onboarding.completed:
+                    onboarding_hint = (
+                        "\n\n> Tip: Run pm_onboard() to configure usage rules and generate agent rules file"
+                    )
+            except Exception:
+                pass
+
             if not project:
                 # All-project overview
                 projects = stores.project.list_projects()
                 if not projects:
-                    return "No projects found. Run `pm_init` and `pm_project create`."
+                    return "No projects found. Run `pm_init` and `pm_project create`." + onboarding_hint
                 lines = ["# Board Status\n"]
                 for p in projects:
                     items = stores.board.list_items(p)
@@ -103,6 +108,7 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
                 return (
                     "\n".join(lines)
                     + '\n\n> Next: pm_status("project-name") for details, or pm_next("project-name") to start working'
+                    + onboarding_hint
                 )
 
             # Single-project status
@@ -139,7 +145,7 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             if suggested:
                 lines.append(f"\n**Suggested Next:** {suggested.id} — {suggested.title}")
 
-            return "\n".join(lines) + f'\n\n> Next: pm_next("{project}") to get a scoped work package'
+            return "\n".join(lines) + f'\n\n> Next: pm_next("{project}") to get a scoped work package' + onboarding_hint
         except Exception as e:
             return f"Error: {e}"
 
@@ -470,6 +476,45 @@ def register(mcp, stores, enricher) -> None:  # noqa: C901
             return (
                 f"Learning {learning_id} added ({scope_label})."
                 + '\n\n> Next: Continue working or pm_next("project") for the next task'
+            )
+        except Exception as e:
+            return f"Error: {e}"
+
+    # ── 12. pm_onboard ─────────────────────────────────────────────────
+    @mcp.tool(
+        description=(
+            "Interactive onboarding guide for first-time agendum setup. "
+            "Walks through: usage rules, project creation, learnings setup, and agent rules generation. "
+            "Steps: 'start' -> 'usage_mode' -> 'project' -> 'learnings' -> 'rules' -> 'done'. "
+            "Call with step='start' to begin. Each step returns guidance and the next step to call. "
+            "Ask the user for their preferences at each step, then pass their answers as parameters."
+        )
+    )
+    def pm_onboard(
+        step: str = "start",
+        usage_mode: str = "",
+        project_name: str = "",
+        project_description: str = "",
+        seed_learnings: str = "",
+        test_command: str = "",
+        lint_command: str = "",
+        conventions: str = "",
+        force: bool = False,
+    ) -> str:
+        try:
+            from agendum.onboarding import OnboardingGuide
+
+            guide = OnboardingGuide(stores)
+            return guide.run_step(
+                step,
+                usage_mode=usage_mode,
+                project_name=project_name,
+                project_description=project_description,
+                seed_learnings=seed_learnings,
+                test_command=test_command,
+                lint_command=lint_command,
+                conventions=conventions,
+                force=force,
             )
         except Exception as e:
             return f"Error: {e}"

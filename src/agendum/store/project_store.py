@@ -39,6 +39,10 @@ class ProjectStore:
         with get_lock(path):
             atomic_write(path, yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False))
 
+    def save_config(self, config: BoardConfig) -> None:
+        """Write board configuration to config.yaml (atomic + locked)."""
+        self._write_config(config)
+
     def read_config(self) -> BoardConfig:
         path = self._config_path()
         if not path.exists():

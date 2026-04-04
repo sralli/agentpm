@@ -1,14 +1,6 @@
-# {{PROJECT_NAME}}
-
-{{DESCRIPTION}}
-
 ## agendum usage rules
 
 {{USAGE_RULES}}
-
-## Development workflow
-
-This project uses **agendum** for task management.
 
 ### Workflow
 1. `pm_status` -- Orient: check current board state
@@ -16,18 +8,3 @@ This project uses **agendum** for task management.
 3. Implement within scope and constraints
 4. `pm_done(project, item_id)` -- Record completion with decisions/patterns
 5. `pm_learn(content, tags)` -- Capture cross-project insights
-
-### When to skip agendum
-- Single-line fixes (typos, version bumps)
-- Pure research/exploration (no code changes)
-
-### Quick reference
-
-```bash
-{{TEST_COMMAND}}
-{{LINT_COMMAND}}
-```
-
-## Conventions
-
-{{CONVENTIONS}}

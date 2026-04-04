@@ -184,7 +184,7 @@ agendum status                                  # Dashboard overview
 
 ## Features
 
-### 11 MCP Tools
+### 12 MCP Tools
 
 | Tool | Purpose |
 |------|---------|
@@ -199,6 +199,7 @@ agendum status                                  # Dashboard overview
 | `pm_block` | Report a task as blocked with reason |
 | `pm_memory` | Read, write, append, or search project memory |
 | `pm_learn` | Record cross-project or project-scoped learnings |
+| `pm_onboard` | Interactive onboarding guide — usage rules, project setup, rules file generation |
 
 ### Key Capabilities
 
@@ -260,7 +261,8 @@ src/agendum/
 ├── server.py             # MCP server wiring (FastMCP)
 ├── config.py             # Shared configuration
 ├── models.py             # Pydantic models (BoardItem, WorkPackage)
-├── tools.py              # 11 MCP tools
+├── tools.py              # 12 MCP tools
+├── onboarding.py         # Step-based onboarding guide
 ├── task_graph.py          # Dependency resolution + topological levels
 ├── cli.py                # CLI interface
 ├── enrichment/

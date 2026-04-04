@@ -156,6 +156,102 @@ def next(ctx: click.Context, project: str) -> None:
 
 
 @cli.command()
+@click.option("--yes", "-y", is_flag=True, help="Accept all defaults (QuickStart mode)")
+@click.option("--force", is_flag=True, help="Re-run even if already completed")
+@click.pass_context
+def onboard(ctx: click.Context, yes: bool, force: bool) -> None:
+    """Interactive setup wizard for agendum."""
+    from agendum.config import derive_board_name, find_git_root
+    from agendum.store.learnings_store import LearningsStore
+    from agendum.store.memory_store import MemoryStore
+
+    root = ctx.obj["root"]
+    project_store = ProjectStore(root)
+
+    # Auto-init if needed
+    if not (root / "config.yaml").exists():
+        project_store.init_board(derive_board_name())
+
+    class _CliStores:
+        def __init__(self):
+            self._root = root
+            self.project = project_store
+            self.board = BoardStore(root)
+            self.learnings = LearningsStore(root)
+            self.memory = MemoryStore(root)
+
+        @property
+        def root(self):
+            return self._root
+
+    from agendum.onboarding import OnboardingGuide
+
+    stores = _CliStores()
+    guide = OnboardingGuide(stores, git_root=find_git_root())
+
+    # Step 1: Start
+    result = guide.run_step("start", force=force)
+    if "already completed" in result.lower() and not force:
+        click.echo(result)
+        return
+
+    click.echo("Welcome to agendum setup!\n")
+
+    # Step 2: Usage mode
+    if yes:
+        mode = "guided"
+    else:
+        mode = click.prompt(
+            "How should agents use agendum? (always/guided/available)",
+            default="guided",
+            type=click.Choice(["always", "guided", "available"], case_sensitive=False),
+        )
+    result = guide.run_step("usage_mode", usage_mode=mode)
+    click.echo(f"  Usage mode set to: {mode}\n")
+
+    # Step 3: Project
+    if yes:
+        project_name = derive_board_name()
+        result = guide.run_step("project", project_name=project_name, project_description="")
+        click.echo(f"  Created project: {project_name}\n")
+    else:
+        if click.confirm("Create your first project?", default=True):
+            project_name = click.prompt("Project name", default=derive_board_name())
+            description = click.prompt("Description (optional)", default="")
+            result = guide.run_step("project", project_name=project_name, project_description=description)
+            click.echo(f"  Created project: {project_name}\n")
+        else:
+            click.echo("  Skipped project creation.\n")
+
+    # Step 4: Learnings
+    if not yes:
+        learnings_input = click.prompt("Seed learnings (comma-separated, or Enter to skip)", default="")
+        if learnings_input:
+            result = guide.run_step("learnings", seed_learnings=learnings_input)
+            click.echo(f"  {result.splitlines()[0]}\n")
+        else:
+            click.echo("  Skipped learnings.\n")
+
+    # Step 5: Rules
+    if yes:
+        result = guide.run_step("rules")
+        click.echo(f"  {result.splitlines()[0]}\n")
+    else:
+        if click.confirm("Generate agent rules file (CLAUDE.md)?", default=True):
+            test_cmd = click.prompt("Test command", default="uv run pytest")
+            lint_cmd = click.prompt("Lint command", default="uv run ruff check .")
+            conventions = click.prompt("Conventions (optional)", default="")
+            result = guide.run_step("rules", test_command=test_cmd, lint_command=lint_cmd, conventions=conventions)
+            click.echo(f"  {result.splitlines()[0]}\n")
+        else:
+            click.echo("  Skipped rules generation.\n")
+
+    # Step 6: Done
+    result = guide.run_step("done")
+    click.echo("\n" + result)
+
+
+@cli.command()
 @click.pass_context
 def serve(ctx: click.Context) -> None:
     """Start the MCP server (stdio transport)."""
