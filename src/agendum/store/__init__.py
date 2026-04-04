@@ -7,6 +7,13 @@ import re
 _UNSAFE_PATTERN = re.compile(r"[/\\]|\.\.|[\x00-\x1f]")
 
 
+def parse_csv(value: str) -> list[str]:
+    """Parse comma-separated string into list, stripping whitespace."""
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 def sanitize_name(name: str) -> str:
     """Validate and sanitize a project or task ID name.
 

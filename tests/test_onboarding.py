@@ -51,17 +51,6 @@ def guide(stores, tmp_path):
     return OnboardingGuide(stores, git_root=git_root)
 
 
-@pytest.fixture
-def guide_no_git(stores, tmp_path):
-    """Create an OnboardingGuide with no git root (path without .git)."""
-    from agendum.onboarding import OnboardingGuide
-
-    no_git_dir = tmp_path / "no_git_here"
-    no_git_dir.mkdir()
-    # Pass a path that exists but has no .git — OnboardingGuide stores it directly
-    return OnboardingGuide(stores, git_root=no_git_dir)
-
-
 @pytest_asyncio.fixture
 async def onboard_server(tmp_path):
     """Fresh FastMCP instance with onboarding support."""
@@ -117,7 +106,7 @@ def test_onboard_start_fresh(guide):
 def test_onboard_start_already_completed(guide, stores):
     config = stores.project.read_config()
     config.onboarding.completed = True
-    stores.project._write_config(config)
+    stores.project.save_config(config)
 
     result = guide.run_step("start")
     assert "already completed" in result.lower()
@@ -127,7 +116,7 @@ def test_onboard_start_already_completed(guide, stores):
 def test_onboard_start_force(guide, stores):
     config = stores.project.read_config()
     config.onboarding.completed = True
-    stores.project._write_config(config)
+    stores.project.save_config(config)
 
     result = guide.run_step("start", force=True)
     assert "Welcome to agendum" in result
@@ -346,7 +335,7 @@ async def test_pm_status_no_hint_after_onboarding(onboard_server):
 
     config = stores.project.read_config()
     config.onboarding.completed = True
-    stores.project._write_config(config)
+    stores.project.save_config(config)
 
     result = await call(mcp, "pm_status")
     assert "pm_onboard" not in result
@@ -368,3 +357,36 @@ def test_config_backward_compatible(tmp_path):
     config = store.read_config()
     assert config.onboarding.usage_mode == "guided"
     assert config.onboarding.completed is False
+
+
+# ── Additional edge cases ─────────────────────────────────────────────────
+
+
+def test_onboard_rules_agents_md(guide, stores, tmp_path):
+    """Appends to AGENTS.md when it exists instead of CLAUDE.md."""
+    git_root = tmp_path / "repo"
+    agents_md = git_root / "AGENTS.md"
+    agents_md.write_text("# Agents config\n\nExisting rules.\n")
+
+    guide.run_step("usage_mode", usage_mode="guided")
+    result = guide.run_step("rules")
+
+    assert "AGENTS.md" in result
+    assert "appended" in result.lower()
+
+    content = agents_md.read_text()
+    assert "Existing rules." in content
+    assert "agendum usage rules" in content
+    # Should NOT have created CLAUDE.md
+    assert not (git_root / "CLAUDE.md").exists()
+
+
+def test_onboard_parse_csv_edge_cases():
+    """Verify parse_csv handles edge inputs."""
+    from agendum.store import parse_csv
+
+    assert parse_csv("") == []
+    assert parse_csv(",,,") == []
+    assert parse_csv(" , , ") == []
+    assert parse_csv("a, b, c") == ["a", "b", "c"]
+    assert parse_csv("  single  ") == ["single"]

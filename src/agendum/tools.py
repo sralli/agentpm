@@ -1,4 +1,4 @@
-"""MCP tool registrations — 11 tools from pm_init through pm_learn."""
+"""MCP tool registrations — 12 tools from pm_init through pm_onboard."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from agendum.models import BoardItem, TaskPriority, TaskStatus, TaskType, WorkPackage
+from agendum.store import parse_csv as _parse_csv
 from agendum.task_graph import (
     detect_cycles,
     resolve_completions,
@@ -14,15 +15,8 @@ from agendum.task_graph import (
 )
 
 
-def _parse_csv(value: str) -> list[str]:
-    """Parse comma-separated string into list, stripping whitespace."""
-    if not value:
-        return []
-    return [item.strip() for item in value.split(",") if item.strip()]
-
-
 def register(mcp, stores, enricher) -> None:  # noqa: C901
-    """Register all 11 v2 MCP tools on the given FastMCP instance."""
+    """Register all 12 MCP tools on the given FastMCP instance."""
 
     # ── 1. pm_init ──────────────────────────────────────────────────────
     @mcp.tool(

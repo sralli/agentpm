@@ -174,10 +174,15 @@ def onboard(ctx: click.Context, yes: bool, force: bool) -> None:
 
     class _CliStores:
         def __init__(self):
+            self._root = root
             self.project = project_store
             self.board = BoardStore(root)
             self.learnings = LearningsStore(root)
             self.memory = MemoryStore(root)
+
+        @property
+        def root(self):
+            return self._root
 
     from agendum.onboarding import OnboardingGuide
 

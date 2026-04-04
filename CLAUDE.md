@@ -44,7 +44,7 @@ uv run ruff format .        # format
 
 ## Architecture
 
-- **11 MCP tools** in `tools.py`
+- **12 MCP tools** in `tools.py`
 - **4 stores**: BoardStore, ProjectStore, MemoryStore, LearningsStore
 - **Enrichment pipeline**: `enrichment/pipeline.py` + `enrichment/sources.py`
 - All writes use `get_lock()` + `atomic_write()` from `store/locking.py`
@@ -67,8 +67,9 @@ uv run ruff format .        # format
 src/agendum/
   server.py         — FastMCP wiring, lazy store init
   models.py         — Pydantic models (BoardItem, WorkPackage)
-  tools.py          — 11 MCP tools
-  config.py         — resolve_root()
+  tools.py          — 12 MCP tools
+  onboarding.py     — Step-based onboarding guide (OnboardingGuide)
+  config.py         — resolve_root(), find_git_root()
   cli.py            — CLI interface
   task_graph.py     — Dependency resolution (topological levels, cycle detection)
   enrichment/       — Context enrichment pipeline

@@ -3,8 +3,28 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING, Protocol
 
 from agendum.config import find_git_root
+from agendum.store import parse_csv as _parse_csv
+from agendum.store.locking import atomic_write
+
+if TYPE_CHECKING:
+    from agendum.models import BoardConfig
+    from agendum.store.board_store import BoardStore
+    from agendum.store.learnings_store import LearningsStore
+    from agendum.store.memory_store import MemoryStore
+    from agendum.store.project_store import ProjectStore
+
+
+class OnboardingStores(Protocol):
+    """Duck-type protocol for the stores object used by OnboardingGuide."""
+
+    project: ProjectStore
+    board: BoardStore
+    learnings: LearningsStore
+    memory: MemoryStore
+
 
 _VALID_MODES = ("always", "guided", "available")
 
@@ -64,16 +84,15 @@ _FULL_TEMPLATE = """\
 """
 
 
-def _parse_csv(value: str) -> list[str]:
-    if not value:
-        return []
-    return [item.strip() for item in value.split(",") if item.strip()]
+def _save_config(stores: OnboardingStores, config: BoardConfig) -> None:
+    """Save config via the public ProjectStore API."""
+    stores.project.save_config(config)
 
 
 class OnboardingGuide:
     """Step-based onboarding guide consumed by both MCP tool and CLI."""
 
-    def __init__(self, stores: object, git_root: Path | None = None):
+    def __init__(self, stores: OnboardingStores, git_root: Path | None = None):
         self._stores = stores
         self._git_root = git_root or find_git_root()
 
@@ -89,7 +108,7 @@ class OnboardingGuide:
             return f"Error in step '{step}': {e}"
 
     def _step_start(self, force: bool = False, **_kwargs) -> str:
-        config = self._stores.project.read_config()  # type: ignore[union-attr]
+        config = self._stores.project.read_config()
         if config.onboarding.completed and not force:
             return (
                 "Onboarding already completed.\n\n"
@@ -129,9 +148,9 @@ class OnboardingGuide:
                 '> Next: pm_onboard(step="usage_mode", usage_mode="guided")'
             )
 
-        config = self._stores.project.read_config()  # type: ignore[union-attr]
+        config = self._stores.project.read_config()
         config.onboarding.usage_mode = mode
-        self._stores.project._write_config(config)  # type: ignore[union-attr]
+        _save_config(self._stores, config)
 
         return (
             f"Usage mode set to **{mode}**.\n\n"
@@ -146,7 +165,7 @@ class OnboardingGuide:
                 '> Next: pm_onboard(step="learnings", seed_learnings="learning1, learning2")'
             )
 
-        self._stores.project.create_project(project_name, project_description)  # type: ignore[union-attr]
+        self._stores.project.create_project(project_name, project_description)
 
         return (
             f"Project **{project_name}** created.\n\n"
@@ -166,7 +185,7 @@ class OnboardingGuide:
         entries = _parse_csv(seed_learnings)
         added = []
         for entry in entries:
-            learning_id = self._stores.learnings.add_learning(entry)  # type: ignore[union-attr]
+            learning_id = self._stores.learnings.add_learning(entry)
             added.append(f"- {learning_id}: {entry}")
 
         return (
@@ -183,7 +202,7 @@ class OnboardingGuide:
         conventions: str = "",
         **_kwargs,
     ) -> str:
-        config = self._stores.project.read_config()  # type: ignore[union-attr]
+        config = self._stores.project.read_config()
         mode = config.onboarding.usage_mode
         usage_rules = _USAGE_RULES.get(mode, _USAGE_RULES["guided"])
 
@@ -191,7 +210,7 @@ class OnboardingGuide:
 
         if not self._git_root:
             config.onboarding.rules_generated = True
-            self._stores.project._write_config(config)  # type: ignore[union-attr]
+            _save_config(self._stores, config)
             return (
                 "Could not detect git root -- cannot write rules file.\n\n"
                 "Here is the agendum rules snippet to add manually:\n\n"
@@ -211,25 +230,25 @@ class OnboardingGuide:
             existing = rules_path.read_text(encoding="utf-8")
             if _AGENDUM_SECTION_MARKER in existing:
                 config.onboarding.rules_generated = True
-                self._stores.project._write_config(config)  # type: ignore[union-attr]
+                _save_config(self._stores, config)
                 return (
                     f"Agent rules file `{rules_path.name}` already contains agendum rules.\n\n"
                     '> Next: pm_onboard(step="done")'
                 )
             # Append to existing file
             appended = existing.rstrip() + "\n\n" + snippet
-            rules_path.write_text(appended, encoding="utf-8")
+            atomic_write(rules_path, appended)
             config.onboarding.rules_generated = True
-            self._stores.project._write_config(config)  # type: ignore[union-attr]
+            _save_config(self._stores, config)
             return (
                 f"Appended agendum rules to existing `{rules_path.name}`.\n\n"
-                f"Your existing content was preserved.\n\n"
+                "Your existing content was preserved.\n\n"
                 '> Next: pm_onboard(step="done")'
             )
 
         # Create new CLAUDE.md from full template
         project_name = ""
-        projects = self._stores.project.list_projects()  # type: ignore[union-attr]
+        projects = self._stores.project.list_projects()
         if projects:
             project_name = projects[0]
 
@@ -243,19 +262,19 @@ class OnboardingGuide:
         )
 
         rules_path = self._git_root / "CLAUDE.md"
-        rules_path.write_text(full_content, encoding="utf-8")
+        atomic_write(rules_path, full_content)
         config.onboarding.rules_generated = True
-        self._stores.project._write_config(config)  # type: ignore[union-attr]
+        _save_config(self._stores, config)
 
         return f'Generated `CLAUDE.md` at `{rules_path}`.\n\nUsage mode: **{mode}**\n\n> Next: pm_onboard(step="done")'
 
     def _step_done(self, **_kwargs) -> str:
-        config = self._stores.project.read_config()  # type: ignore[union-attr]
+        config = self._stores.project.read_config()
         config.onboarding.completed = True
-        self._stores.project._write_config(config)  # type: ignore[union-attr]
+        _save_config(self._stores, config)
 
         mode = config.onboarding.usage_mode
-        projects = self._stores.project.list_projects()  # type: ignore[union-attr]
+        projects = self._stores.project.list_projects()
 
         lines = [
             "# Onboarding complete!\n",
