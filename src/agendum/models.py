@@ -59,6 +59,14 @@ class MemoryEntry(BaseModel):
     updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class OnboardingConfig(BaseModel):
+    """Onboarding configuration persisted in config.yaml."""
+
+    usage_mode: str = "guided"  # "always" | "guided" | "available"
+    completed: bool = False
+    rules_generated: bool = False
+
+
 class BoardConfig(BaseModel):
     """Board configuration stored in config.yaml."""
 
@@ -66,6 +74,7 @@ class BoardConfig(BaseModel):
     name: str = "agendum"
     projects: list[str] = Field(default_factory=list)
     default_project: str | None = None
+    onboarding: OnboardingConfig = Field(default_factory=OnboardingConfig)
 
 
 class Project(BaseModel):

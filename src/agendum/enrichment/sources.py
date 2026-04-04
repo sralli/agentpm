@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agendum.config import find_git_root
 from agendum.models import BoardItem, TaskStatus, WorkPackage
 from agendum.store.memory_store import MemoryStore
 
@@ -18,7 +19,7 @@ class ProjectRulesSource:
         self._max_chars = max_chars
 
     def enrich(self, package: WorkPackage, item: BoardItem, project: str) -> WorkPackage:
-        git_root = _find_git_root(self._root)
+        git_root = find_git_root(self._root)
         if not git_root:
             return package
 
@@ -176,16 +177,3 @@ class ProjectLearningsSource:
                 "pointers": pointers,
             }
         )
-
-
-def _find_git_root(start: Path, max_depth: int = 10) -> Path | None:
-    """Walk up from start to find the nearest .git/ directory.
-
-    Stops after max_depth levels to avoid traversing to filesystem root.
-    """
-    for i, parent in enumerate([start, *list(start.parents)]):
-        if i >= max_depth:
-            break
-        if (parent / ".git").exists():
-            return parent
-    return None

@@ -100,14 +100,16 @@ enricher = _LazyEnricher()
 INSTRUCTIONS = """agendum is a project memory and scoping engine for AI coding agents.
 
 Workflow:
-1. pm_project("create", name, description) — Create a project
-2. pm_ingest(project, plan_file) — Import tasks from a plan file
-3. pm_next(project) — Get a bounded, context-rich work package
-4. Implement the task within the specified scope and constraints
-5. pm_done(project, item_id) — Record completion with decisions and patterns
-6. Repeat steps 3-5. Use pm_status for session resume. Use pm_learn for cross-project insights.
+1. pm_onboard() — First-time setup: configure usage rules, create project, generate agent rules
+2. pm_project("create", name, description) — Create a project
+3. pm_ingest(project, plan_file) — Import tasks from a plan file
+4. pm_next(project) — Get a bounded, context-rich work package
+5. Implement the task within the specified scope and constraints
+6. pm_done(project, item_id) — Record completion with decisions and patterns
+7. Repeat steps 4-6. Use pm_status for session resume. Use pm_learn for cross-project insights.
 
-Board initialization is automatic — no setup needed. Just create a project and start working."""
+Board initialization is automatic — no setup needed. Just create a project and start working.
+First time? Call pm_onboard() for guided setup."""
 
 mcp = FastMCP("agendum", instructions=INSTRUCTIONS)
 register(mcp, stores, enricher)

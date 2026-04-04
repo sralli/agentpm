@@ -43,6 +43,22 @@ def derive_board_name() -> str:
     return Path.cwd().name
 
 
+def find_git_root(start: Path | None = None, max_depth: int = 10) -> Path | None:
+    """Walk up from start to find the nearest .git/ directory.
+
+    Stops after max_depth levels to avoid traversing to filesystem root.
+    If start is None, uses the current working directory.
+    """
+    if start is None:
+        start = Path.cwd()
+    for i, parent in enumerate([start, *list(start.parents)]):
+        if i >= max_depth:
+            break
+        if (parent / ".git").exists():
+            return parent
+    return None
+
+
 def _migrate_if_needed(old: Path, new: Path) -> None:
     """Rename .agentpm/ → .agendum/ if old exists and new does not."""
     if old.exists() and not new.exists():
